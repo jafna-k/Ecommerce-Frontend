@@ -1,0 +1,133 @@
+@import "tailwindcss";* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background: #fff;
+  color: #222;
+}
+
+/* Navbar */
+
+.navbar {
+  width: 100%;
+  background: #ffffff;
+  border-bottom: 1px solid #eeeeee;
+}
+
+.navbar-container {
+  max-width: 1200px;
+  margin: auto;
+  height: 75px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 30px;
+}
+
+.logo {
+  text-decoration: none;
+  color: #222;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.nav-links {
+  display: flex;
+  gap: 30px;
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: #333;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.nav-links a:hover {
+  color: #d63384;
+}
+
+/* Hero */
+
+.hero {
+  min-height: 600px;
+
+  display: flex;
+  align-items: center;
+
+  background: linear-gradient(
+    120deg,
+    #fff0f6,
+    #ffffff
+  );
+}
+
+.hero-content {
+  max-width: 1200px;
+  width: 100%;
+  margin: auto;
+  padding: 60px 30px;
+}
+
+.hero-small {
+  color: #d63384;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  margin-bottom: 20px;
+}
+
+.hero h1 {
+  font-size: 64px;
+  line-height: 1.1;
+  margin-bottom: 25px;
+}
+
+.hero-description {
+  max-width: 500px;
+  font-size: 18px;
+  line-height: 1.6;
+  color: #666;
+  margin-bottom: 35px;
+}
+
+.shop-btn {
+  display: inline-block;
+  padding: 14px 32px;
+
+  background: #d63384;
+  color: white;
+
+  text-decoration: none;
+  border-radius: 5px;
+
+  font-weight: 600;
+}
+
+.shop-btn:hover {
+  background: #b52b6f;
+}
+
+/* Featured */
+
+.featured {
+  text-align: center;
+  padding: 80px 30px;
+}
+
+.featured h2 {
+  font-size: 36px;
+  margin-bottom: 15px;
+}
+
+.featured p {
+  color: #777;
+  font-size: 17px;
+}
