@@ -1,22 +1,19 @@
+
 import { Link } from "react-router-dom";
-import Navbar from "../components/Navbar";
 
-function Home() {
+const Home = () => {
   return (
-    <>
-      <Navbar />
-
+    <div className="home-page">
+      {/* Hero Section */}
       <section className="hero">
         <div className="hero-content">
-          <p className="hero-small">WELCOME TO DRESS SHOP</p>
-
           <h1>
             Find Your
             <br />
             Perfect Dress
           </h1>
 
-          <p className="hero-description">
+          <p>
             Discover beautiful, comfortable and stylish dresses
             made for every occasion.
           </p>
@@ -27,6 +24,7 @@ function Home() {
         </div>
       </section>
 
+      {/* Featured Products */}
       <section className="featured">
         <h2>Featured Products</h2>
 
@@ -34,8 +32,8 @@ function Home() {
           Explore our latest collection of stylish dresses.
         </p>
       </section>
-    </>
+    </div>
   );
-}
+};
 
 export default Home;
