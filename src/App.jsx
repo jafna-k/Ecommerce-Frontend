@@ -1,16 +1,12 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
 import Home from "./pages/Home";
 import Products from "./pages/Products";
 import ProductDetails from "./pages/ProductDetails";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
 import Cart from "./pages/Cart";
-import Checkout from "./pages/Checkout";
-import Orders from "./pages/Orders";
-import AdminDashboard from "./pages/AdminDashboard";
+
+import "./index.css";
 
 function App() {
   return (
@@ -27,23 +23,26 @@ function App() {
           element={<ProductDetails />}
         />
 
-        <Route path="/login" element={<Login />} />
-
-        <Route path="/register" element={<Register />} />
-
-        <Route path="/cart" element={<Cart />} />
-
-        <Route path="/checkout" element={<Checkout />} />
-
-        <Route path="/orders" element={<Orders />} />
+        <Route
+          path="/cart"
+          element={<Cart />}
+        />
 
         <Route
-          path="/admin/dashboard"
-          element={<AdminDashboard />}
+          path="/login"
+          element={<h2>Login Page</h2>}
+        />
+
+        <Route
+          path="/profile"
+          element={<h2>My Profile</h2>}
+        />
+
+        <Route
+          path="*"
+          element={<h2>404 - Page Not Found</h2>}
         />
       </Routes>
-
-      <Footer />
     </BrowserRouter>
   );
 }

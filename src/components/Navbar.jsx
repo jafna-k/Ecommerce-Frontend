@@ -1,68 +1,25 @@
-import { Link, useNavigate } from "react-router-dom";
+
+import { Link } from "react-router-dom";
 
 function Navbar() {
-  const navigate = useNavigate();
-
-  const user = JSON.parse(localStorage.getItem("user"));
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-
-    navigate("/login");
-  };
+  const token = localStorage.getItem("token");
 
   return (
     <nav className="navbar">
-      <div className="navbar-container">
+      <Link to="/" className="logo">
+        Dress<span>Hub</span>
+      </Link>
 
-        <Link to="/" className="logo">
-          DRESS SHOP
-        </Link>
+      <div className="nav-links">
+        <Link to="/">Home</Link>
+        <Link to="/products">Shop</Link>
+        <Link to="/cart">Cart</Link>
 
-        <div className="nav-links">
-          <Link to="/">Home</Link>
-
-          <Link to="/products">
-            Products
-          </Link>
-
-          <Link to="/cart">
-            Cart 🛒
-          </Link>
-
-          {user?.role === "admin" && (
-            <Link to="/admin/dashboard">
-              Dashboard
-            </Link>
-          )}
-
-          {!user ? (
-            <>
-              <Link to="/login">
-                Login
-              </Link>
-
-              <Link to="/register">
-                Register
-              </Link>
-            </>
-          ) : (
-            <>
-              <span className="welcome">
-                Hi, {user.name}
-              </span>
-
-              <button
-                className="logout-btn"
-                onClick={handleLogout}
-              >
-                Logout
-              </button>
-            </>
-          )}
-        </div>
-
+        {token ? (
+          <Link to="/profile">My Account</Link>
+        ) : (
+          <Link to="/login">Login</Link>
+        )}
       </div>
     </nav>
   );
