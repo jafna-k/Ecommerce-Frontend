@@ -10,8 +10,11 @@ function ProductDetails() {
   const [product, setProduct] = useState(null);
   const [variants, setVariants] = useState([]);
   const [selectedVariant, setSelectedVariant] = useState(null);
+  const [selectedSize, setSelectedSize] = useState("");
+  const [selectedColor, setSelectedColor] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [adding, setAdding] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
@@ -21,39 +24,59 @@ function ProductDetails() {
     async function loadProduct() {
       setLoading(true);
       setError("");
+      setMessage("");
+      setProduct(null);
+      setVariants([]);
       setSelectedVariant(null);
+      setSelectedSize("");
+      setSelectedColor("");
       setQuantity(1);
 
       try {
-        const [productRes, variantRes] = await Promise.all([
-          api.get(`/product/${id}`),
-          api.get("/productvariant"),
-        ]);
+        const productRes = await api.get(`/product/${id}`);
+        const productData =
+          productRes.data.product || productRes.data;
 
-        const productData = productRes.data;
-        const variantData = variantRes.data;
+        let productVariants = [];
 
-        const allVariants = Array.isArray(variantData)
-          ? variantData
-          : variantData.variants || [];
+        try {
+          const variantRes = await api.get("/productvariant");
+          const data = variantRes.data;
 
-        const productVariants = allVariants.filter(
-          (variant) =>
-            String(
-              variant.product?._id || variant.product
-            ) === String(id)
-        );
+          const allVariants = Array.isArray(data)
+            ? data
+            : data.variants ||
+              data.productVariants ||
+              data.data ||
+              [];
+
+          productVariants = allVariants.filter((variant) => {
+            const variantProduct =
+              variant.product?._id || variant.product;
+
+            return String(variantProduct) === String(id);
+          });
+        } catch (variantError) {
+          console.error(
+            "Variant API error:",
+            variantError.response?.data || variantError.message
+          );
+        }
 
         if (active) {
-          setProduct(productData.product || productData);
+          setProduct(productData);
           setVariants(productVariants);
         }
       } catch (err) {
-        console.error(err);
+        console.error(
+          "Product API error:",
+          err.response?.data || err.message
+        );
 
         if (active) {
           setError(
-            "Product load ചെയ്യാൻ കഴിഞ്ഞില്ല. Backend API പരിശോധിക്കുക."
+            err.response?.data?.message ||
+              "Product load cheyyan kazhinjilla."
           );
         }
       } finally {
@@ -68,209 +91,294 @@ function ProductDetails() {
     };
   }, [id]);
 
+  // Backend ProductVariant model uses "stock", not "stockQuantity".
   const availableVariants = variants.filter(
-    (variant) => Number(variant.stockQuantity) > 0
+    (variant) => Number(variant.stock) > 0
   );
 
   const sizes = [
-    ...new Set(availableVariants.map((v) => v.size).filter(Boolean)),
+    ...new Set(
+      availableVariants.map((variant) => variant.size).filter(Boolean)
+    ),
   ];
 
   const colors = [
-    ...new Set(availableVariants.map((v) => v.color).filter(Boolean)),
+    ...new Set(
+      availableVariants.map((variant) => variant.color).filter(Boolean)
+    ),
   ];
 
-  function selectVariant(variant) {
-    setSelectedVariant(variant);
+  function chooseSize(size) {
+    setSelectedSize(size);
+    setSelectedVariant(null);
     setQuantity(1);
     setMessage("");
+
+    const matches = availableVariants.filter(
+      (variant) =>
+        variant.size === size &&
+        (!selectedColor || variant.color === selectedColor)
+    );
+
+    if (matches.length > 0) {
+      const match =
+        matches.find((variant) => variant.color === selectedColor) ||
+        matches[0];
+
+      setSelectedColor(match.color);
+      setSelectedVariant(match);
+    } else {
+      setMessage("Ee size/color combination stock-il illa.");
+    }
   }
 
-  function addToCart() {
+  function chooseColor(color) {
+    setSelectedColor(color);
+    setSelectedVariant(null);
+    setQuantity(1);
+    setMessage("");
+
+    const matches = availableVariants.filter(
+      (variant) =>
+        variant.color === color &&
+        (!selectedSize || variant.size === selectedSize)
+    );
+
+    if (matches.length > 0) {
+      const match =
+        matches.find((variant) => variant.size === selectedSize) ||
+        matches[0];
+
+      setSelectedSize(match.size);
+      setSelectedVariant(match);
+    } else {
+      setMessage("Ee color/size combination stock-il illa.");
+    }
+  }
+
+  const variantPrices = variants
+    .map((variant) => Number(variant.price ?? product?.price))
+    .filter((price) => Number.isFinite(price));
+
+  const displayPrice = selectedVariant
+    ? selectedVariant.price ?? product?.price
+    : variantPrices.length > 0
+      ? Math.min(...variantPrices)
+      : product?.price;
+
+  const image = product?.images?.[0] || product?.image || "";
+
+  const imageUrl = image
+    ? image.startsWith("http") || image.startsWith("/")
+      ? image
+      : `/images/${image}`
+    : "https://placehold.co/600x700?text=Dress";
+
+  async function addToCart() {
+    setMessage("");
+
     if (!localStorage.getItem("token")) {
-      setMessage("ദയവായി ആദ്യം login ചെയ്യുക.");
+      setMessage("Please login before adding products to cart.");
       return;
     }
 
     if (!selectedVariant) {
-      setMessage("ആദ്യം size, color തിരഞ്ഞെടുക്കുക.");
+      setMessage("Please select an available size and color.");
       return;
     }
 
-    if (quantity > Number(selectedVariant.stockQuantity)) {
-      setMessage("ആവശ്യമായ quantity stock-ൽ ലഭ്യമല്ല.");
+    if (quantity < 1 || quantity > Number(selectedVariant.stock)) {
+      setMessage("Requested quantity is not available in stock.");
       return;
     }
 
-    const cartItem = {
-      productVariant: selectedVariant._id,
-      quantity,
-    };
+    try {
+      setAdding(true);
 
-    api
-      .post("/cart", cartItem)
-      .then(() => {
-        setMessage("Product cart-ൽ ചേർത്തു!");
-      })
-      .catch((err) => {
-        setMessage(
-          err.response?.data?.message ||
-            "Cart-ൽ ചേർക്കാൻ കഴിഞ്ഞില്ല."
-        );
+      await api.post("/cart", {
+        productVariant: selectedVariant._id,
+        quantity,
       });
+
+      setMessage("Product added to cart successfully!");
+    } catch (err) {
+      console.error(
+        "Add to cart error:",
+        err.response?.data || err.message
+      );
+
+      setMessage(
+        err.response?.data?.message ||
+          "Could not add product to cart."
+      );
+    } finally {
+      setAdding(false);
+    }
   }
 
   if (loading) {
-    return <main className="section">Loading product...</main>;
+    return (
+      <main className="section">
+        <p>Loading product...</p>
+      </main>
+    );
   }
 
   if (error || !product) {
     return (
       <main className="section">
-        <p>{error || "Product not found."}</p>
+        <p className="error-message">
+          {error || "Product not found."}
+        </p>
         <Link to="/products">Back to Shop</Link>
       </main>
     );
   }
 
-  const image =
-    product.images?.[0] ||
-    product.image ||
-    "https://placehold.co/600x700?text=Dress";
-
   return (
     <main className="details-layout">
       <div className="details-image">
-        <img src={image} alt={product.name} />
+        <img
+          src={imageUrl}
+          alt={product.name}
+          onError={(event) => {
+            event.currentTarget.onerror = null;
+            event.currentTarget.src =
+              "https://placehold.co/600x700?text=Dress";
+          }}
+        />
       </div>
 
       <div className="details-info">
-        <p className="eyebrow">DRESSHUB COLLECTION</p>
+        <p className="eyebrow">DRESS SHOP COLLECTION</p>
+
         <h1>{product.name}</h1>
+
         <p className="details-description">
           {product.description}
         </p>
 
         <h2 className="details-price">
-          {selectedVariant
-            ? `₹${selectedVariant.price}`
-            : variants.length
-              ? `From ₹${Math.min(
-                  ...variants.map((v) => Number(v.price))
-                )}`
-              : "Price unavailable"}
+          {displayPrice != null &&
+          Number.isFinite(Number(displayPrice))
+            ? `₹${Number(displayPrice).toLocaleString("en-IN")}`
+            : "Price unavailable"}
         </h2>
 
-        <div className="variant-section">
-          <h3>Choose Size</h3>
-          <div className="option-list">
-            {sizes.map((item) => (
-              <button
-                key={item}
-                className={
-                  selectedVariant?.size === item
-                    ? "variant-option selected"
-                    : "variant-option"
-                }
-                onClick={() => {
-                  const match = availableVariants.find(
-                    (v) =>
-                      v.size === item &&
-                      (!selectedVariant ||
-                        v.color === selectedVariant.color)
-                  );
+        {sizes.length > 0 && (
+          <div className="variant-section">
+            <h3>Choose Size</h3>
 
-                  if (match) selectVariant(match);
-                  else {
-                    setSelectedVariant(null);
-                    setMessage("ഈ size-ന് color തിരഞ്ഞെടുക്കുക.");
+            <div className="option-list">
+              {sizes.map((size) => (
+                <button
+                  type="button"
+                  key={size}
+                  className={
+                    selectedSize === size
+                      ? "variant-option selected"
+                      : "variant-option"
                   }
-                }}
-              >
-                {item}
-              </button>
-            ))}
+                  onClick={() => chooseSize(size)}
+                >
+                  {size}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
-        <div className="variant-section">
-          <h3>Choose Color</h3>
-          <div className="option-list">
-            {colors.map((item) => (
-              <button
-                key={item}
-                className={
-                  selectedVariant?.color === item
-                    ? "variant-option selected"
-                    : "variant-option"
-                }
-                onClick={() => {
-                  const match = availableVariants.find(
-                    (v) =>
-                      v.color === item &&
-                      (!selectedVariant ||
-                        v.size === selectedVariant.size)
-                  );
+        {colors.length > 0 && (
+          <div className="variant-section">
+            <h3>Choose Color</h3>
 
-                  if (match) selectVariant(match);
-                  else {
-                    setSelectedVariant(null);
-                    setMessage("ഈ color-ന് size തിരഞ്ഞെടുക്കുക.");
+            <div className="option-list">
+              {colors.map((color) => (
+                <button
+                  type="button"
+                  key={color}
+                  className={
+                    selectedColor === color
+                      ? "variant-option selected"
+                      : "variant-option"
                   }
-                }}
-              >
-                {item}
-              </button>
-            ))}
+                  onClick={() => chooseColor(color)}
+                >
+                  {color}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
-        {selectedVariant && (
-          <p className="stock-info">
-            {selectedVariant.stockQuantity} items available
+        {availableVariants.length === 0 && (
+          <p className="error-message">
+            No available sizes or colors. Create a product variant
+            with stock in the backend.
           </p>
         )}
 
-        {!availableVariants.length && (
-          <p className="error-message">Out of stock</p>
+        {selectedVariant && (
+          <p className="stock-info">
+            {selectedVariant.stock} items available
+          </p>
         )}
 
         <div className="quantity-control">
           <h3>Quantity</h3>
 
-          <button
-            disabled={!selectedVariant || quantity <= 1}
-            onClick={() => setQuantity((q) => q - 1)}
-          >
-            −
-          </button>
+          <div className="quantity-buttons">
+            <button
+              type="button"
+              disabled={!selectedVariant || quantity <= 1}
+              onClick={() => setQuantity((q) => q - 1)}
+            >
+              −
+            </button>
 
-          <span>{quantity}</span>
+            <span>{quantity}</span>
 
-          <button
-            disabled={
-              !selectedVariant ||
-              quantity >= Number(selectedVariant.stockQuantity)
-            }
-            onClick={() => setQuantity((q) => q + 1)}
-          >
-            +
-          </button>
+            <button
+              type="button"
+              disabled={
+                !selectedVariant ||
+                quantity >= Number(selectedVariant.stock)
+              }
+              onClick={() => setQuantity((q) => q + 1)}
+            >
+              +
+            </button>
+          </div>
         </div>
 
         <button
+          type="button"
           className="add-cart-button"
-          disabled={!availableVariants.length}
+          disabled={!selectedVariant || adding}
           onClick={addToCart}
         >
-          Add to Cart
+          {adding ? "Adding..." : "Add to Cart"}
         </button>
 
-        {message && <p className="cart-message">{message}</p>}
+        {message && (
+          <p className="cart-message" role="status">
+            {message}
+            {message.includes("Please login") && (
+              <>
+                {" "}
+                <Link to="/login">Login here</Link>
+              </>
+            )}
+          </p>
+        )}
 
         <p className="details-note">
           Size and color availability depend on stock for each variant.
         </p>
+
+        <Link className="back-to-shop" to="/products">
+          ← Continue Shopping
+        </Link>
       </div>
     </main>
   );

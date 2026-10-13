@@ -1,85 +1,129 @@
+
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import api from "../services/api";
+import "../index.css";
 
 function Login() {
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [form, setForm] = useState({
+    email: "",
+    password: "",
+  });
+
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
+  function handleChange(event) {
+    setForm({
+      ...form,
+      [event.target.name]: event.target.value,
+    });
+  }
 
+  async function handleSubmit(event) {
+    event.preventDefault();
     setError("");
     setLoading(true);
 
     try {
-      const response = await api.post("/user/login", {
-        email,
-        password,
-      });
+      const response = await api.post("/user/login", form);
+      const data = response.data;
 
-      console.log("LOGIN:", response.data);
+      const token = data.token || data.accessToken;
+      const user = data.user || data.customer;
 
-      const { token, user } = response.data;
+      if (!token) {
+        setError("Login successful, but token was not returned by backend.");
+        return;
+      }
 
       localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(user));
 
-      if (user.role === "admin") {
+      if (user) {
+        localStorage.setItem("user", JSON.stringify(user));
+      }
+
+      if (user?.role === "admin") {
         navigate("/admin/dashboard");
       } else {
-        navigate("/");
+        navigate("/products");
       }
     } catch (err) {
-      console.error("LOGIN ERROR:", err);
+      console.error(
+        "Login error:",
+        err.response?.data || err.message
+      );
 
       setError(
         err.response?.data?.message ||
-          "Invalid email or password"
+          "Login failed. Please check your email and password."
       );
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   return (
-    <div className="page-container">
-      <h1>Login</h1>
+    <main className="login-page">
+      <form className="login-card" onSubmit={handleSubmit}>
+        <p className="eyebrow">WELCOME BACK</p>
 
-      <form onSubmit={handleLogin}>
-        <div>
-          <label>Email</label>
-          <input
-            type="email"
-            placeholder="Enter email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
+        <h1>Login</h1>
 
-        <div>
-          <label>Password</label>
-          <input
-            type="password"
-            placeholder="Enter password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
+        <p className="login-description">
+          Sign in to continue shopping at Dress Shop.
+        </p>
 
-        {error && <p>{error}</p>}
+        {error && (
+          <div className="login-error" role="alert">
+            {error}
+          </div>
+        )}
 
-        <button type="submit" disabled={loading}>
-          {loading ? "Logging in..." : "Login"}
+        <label htmlFor="email">Email address</label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          placeholder="Enter your email"
+          value={form.email}
+          onChange={handleChange}
+          autoComplete="email"
+          required
+        />
+
+        <label htmlFor="password">Password</label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          placeholder="Enter your password"
+          value={form.password}
+          onChange={handleChange}
+          autoComplete="current-password"
+          required
+        />
+
+        <button
+          className="login-submit"
+          type="submit"
+          disabled={loading}
+        >
+          {loading ? "Signing in..." : "Login"}
         </button>
+
+        <p className="register-link">
+          Don't have an account?{" "}
+          <Link to="/register">Create account</Link>
+        </p>
+
+        <Link className="login-back" to="/products">
+          Continue shopping
+        </Link>
       </form>
-    </div>
+    </main>
   );
 }
 
