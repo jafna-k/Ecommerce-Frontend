@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import api from "../services/api";
-import "../index.css";
+import api from "../../services/api";
+import "../../index.css";
 
 function Cart() {
   const [cart, setCart] = useState({ items: [] });

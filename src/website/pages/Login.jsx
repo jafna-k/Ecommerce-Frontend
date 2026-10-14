@@ -1,8 +1,8 @@
 
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import api from "../services/api";
-import "../index.css";
+import api from "../../services/api";
+import "../../index.css";
 
 function Login() {
   const navigate = useNavigate();
@@ -16,10 +16,12 @@ function Login() {
   const [error, setError] = useState("");
 
   function handleChange(event) {
-    setForm({
-      ...form,
-      [event.target.name]: event.target.value,
-    });
+    const { name, value } = event.target;
+
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   }
 
   async function handleSubmit(event) {
@@ -28,27 +30,38 @@ function Login() {
     setLoading(true);
 
     try {
-      const response = await api.post("/user/login", form);
-      const data = response.data;
+      const response = await api.post("/user/login", {
+        email: form.email.trim(),
+        password: form.password,
+      });
 
+      const data = response.data;
       const token = data.token || data.accessToken;
       const user = data.user || data.customer;
 
       if (!token) {
-        setError("Login successful, but token was not returned by backend.");
+        setError(
+          "Login response-il token kittiyilla. Backend login response check cheyyuka."
+        );
         return;
       }
 
+      // Clear old login details
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+
+      // Save new login details
       localStorage.setItem("token", token);
 
       if (user) {
         localStorage.setItem("user", JSON.stringify(user));
       }
 
+      // Redirect based on role
       if (user?.role === "admin") {
-        navigate("/admin/dashboard");
+        navigate("/admin/dashboard", { replace: true });
       } else {
-        navigate("/products");
+        navigate("/products", { replace: true });
       }
     } catch (err) {
       console.error(
@@ -58,7 +71,7 @@ function Login() {
 
       setError(
         err.response?.data?.message ||
-          "Login failed. Please check your email and password."
+          "Login failed. Email and password check cheyyuka."
       );
     } finally {
       setLoading(false);
@@ -83,6 +96,7 @@ function Login() {
         )}
 
         <label htmlFor="email">Email address</label>
+
         <input
           id="email"
           name="email"
@@ -95,6 +109,7 @@ function Login() {
         />
 
         <label htmlFor="password">Password</label>
+
         <input
           id="password"
           name="password"
