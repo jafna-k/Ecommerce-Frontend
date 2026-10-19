@@ -22,6 +22,7 @@ import DashboardLayout from "./Dashboard/components/DashboardLayout";
 import AdminOrderDetails from "./Dashboard/pages/AdminOrderDetails";
 import AdminCustomers from "./Dashboard/pages/AdminCustomers";
 import AdminDashboard from "./Dashboard/pages/AdminDashboard";
+import AdminCategories from "./Dashboard/pages/AdminCategories";
 import AdminProduct from "./Dashboard/pages/AdminProduct";
 import AdminOrders from "./Dashboard/pages/AdminOrders";
 import Inventory from "./Dashboard/pages/Inventory";
@@ -56,6 +57,7 @@ function App() {
           <Route path="orders" element={<AdminOrders />} />
           <Route path="inventory" element={<Inventory />} />
           <Route path="/admin/orders/:id" element={<AdminOrderDetails />}/>
+          <Route path="category" element={<AdminCategories />} />
           
         </Route>
       </Routes>

@@ -7,31 +7,12 @@ import {
 } from "react-router-dom";
 
 const menuItems = [
-  {
-    label: "Dashboard",
-    path: "/admin/dashboard",
-    icon: "▦",
-  },
-  {
-    label: "Products",
-    path: "/admin/products",
-    icon: "♧",
-  },
-  {
-    label: "Orders",
-    path: "/admin/orders",
-    icon: "▤",
-  },
-  {
-    label: "Customers",
-    path: "/admin/customers",
-    icon: "♙",
-  },
-  {
-    label: "Inventory",
-    path: "/admin/inventory",
-    icon: "▣",
-  },
+  { label: "Dashboard", path: "/admin/dashboard", icon: "▦" },
+  { label: "Products", path: "/admin/products", icon: "♧" },
+  { label: "Categories", path: "/admin/category", icon: "▤" },
+  { label: "Orders", path: "/admin/orders", icon: "▤" },
+  { label: "Customers", path: "/admin/customers", icon: "♙" },
+  { label: "Inventory", path: "/admin/inventory", icon: "▣" },
 ];
 
 function DashboardLayout() {
@@ -42,6 +23,8 @@ function DashboardLayout() {
     menuItems.find((item) => item.path === location.pathname)?.label ||
     (location.pathname.startsWith("/admin/orders/")
       ? "Order Details"
+      : location.pathname.startsWith("/admin/category/")
+      ? "Categories"
       : "Dashboard");
 
   function handleLogout() {
@@ -51,14 +34,15 @@ function DashboardLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-[#faf7f0] text-[#24352e] lg:flex">
-
+    <div className="min-h-screen bg-[#faf7f0] text-[#24352e]">
       {/* Sidebar */}
-      <aside className="flex w-full shrink-0 flex-col bg-[#123f32] text-white lg:fixed lg:inset-y-0 lg:left-0 lg:w-64">
-
+      <aside className="z-30 flex w-full flex-col bg-[#123f32] text-white lg:fixed lg:inset-y-0 lg:left-0 lg:w-64 lg:overflow-y-auto">
         {/* Brand */}
         <div className="border-b border-white/10 px-6 py-6">
-          <NavLink to="/admin/dashboard" className="inline-flex items-center gap-3">
+          <NavLink
+            to="/admin/dashboard"
+            className="inline-flex items-center gap-3"
+          >
             <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 font-serif text-3xl text-[#e6d7b9]">
               ✿
             </span>
@@ -81,7 +65,7 @@ function DashboardLayout() {
             MAIN MENU
           </p>
 
-          <nav className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-1">
+          <nav className="flex flex-col gap-2 sm:grid sm:grid-cols-3 lg:flex lg:grid-cols-1">
             {menuItems.map((item) => (
               <NavLink
                 key={item.path}
@@ -95,21 +79,31 @@ function DashboardLayout() {
                   }`
                 }
               >
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-lg group-[.active]:bg-[#e5eadd]">
-                  {item.icon}
-                </span>
+                {({ isActive }) => (
+                  <>
+                    <span
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-lg ${
+                        isActive
+                          ? "bg-[#e5eadd]"
+                          : "bg-white/10"
+                      }`}
+                    >
+                      {item.icon}
+                    </span>
 
-                <span className="truncate">{item.label}</span>
+                    <span className="flex-1 truncate">{item.label}</span>
 
-                <span className="ml-auto hidden text-lg opacity-60 lg:inline">
-                  ›
-                </span>
+                    <span className="hidden text-lg opacity-60 lg:inline">
+                      ›
+                    </span>
+                  </>
+                )}
               </NavLink>
             ))}
           </nav>
         </div>
 
-        {/* Sidebar Bottom */}
+        {/* Bottom Actions */}
         <div className="mt-auto border-t border-white/10 p-4">
           <a
             href="/"
@@ -137,8 +131,7 @@ function DashboardLayout() {
       </aside>
 
       {/* Main Content */}
-      <main className="min-w-0 flex-1 lg:ml-64">
-
+      <main className="min-w-0 lg:ml-64">
         {/* Topbar */}
         <header className="sticky top-0 z-20 flex min-h-24 items-center justify-between gap-4 border-b border-[#e8dfd2] bg-[#fffdf9]/95 px-5 py-5 backdrop-blur sm:px-8 lg:px-10">
           <div>
