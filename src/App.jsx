@@ -26,6 +26,7 @@ import AdminCategories from "./Dashboard/pages/AdminCategories";
 import AdminProduct from "./Dashboard/pages/AdminProduct";
 import AdminOrders from "./Dashboard/pages/AdminOrders";
 import Inventory from "./Dashboard/pages/Inventory";
+import AdminProductVariants from "./Dashboard/pages/AdminProductVariants";
 
 function App() {
   const location = useLocation();
@@ -50,15 +51,15 @@ function App() {
 
         {/* Admin Dashboard */}
         <Route path="/admin" element={<DashboardLayout />}>
-          <Route path="customers" element={<AdminCustomers />} />
           <Route index element={<AdminDashboard />} />
           <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="customers" element={<AdminCustomers />} />
           <Route path="products" element={<AdminProduct />} />
           <Route path="orders" element={<AdminOrders />} />
+          <Route path="orders/:id" element={<AdminOrderDetails />} />
           <Route path="inventory" element={<Inventory />} />
-          <Route path="/admin/orders/:id" element={<AdminOrderDetails />}/>
           <Route path="category" element={<AdminCategories />} />
-          
+          <Route path="variants" element={<AdminProductVariants />} />
         </Route>
       </Routes>
 

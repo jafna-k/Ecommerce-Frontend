@@ -16,8 +16,10 @@ function Sidebar() {
     { path: "/admin/category", label: "Categories", icon: "▤" },
     { path: "/admin/orders", label: "Orders", icon: "▤" },
     { path: "/admin/inventory", label: "Inventory", icon: "▣" },
+    { path: "/admin/variants", label: "Product Variants",icon: "♧",}
   ];
 
+  
   return (
     <aside className="flex min-h-screen w-full flex-col bg-[#092f27] px-4 py-6 text-white sm:px-6 lg:fixed lg:inset-y-0 lg:left-0 lg:w-64 lg:px-5">
       {/* Brand */}

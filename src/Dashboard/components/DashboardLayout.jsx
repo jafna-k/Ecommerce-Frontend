@@ -13,6 +13,7 @@ const menuItems = [
   { label: "Orders", path: "/admin/orders", icon: "▤" },
   { label: "Customers", path: "/admin/customers", icon: "♙" },
   { label: "Inventory", path: "/admin/inventory", icon: "▣" },
+  { label: "Product Variants",path: "/admin/variants",icon: "♧",}
 ];
 
 function DashboardLayout() {
