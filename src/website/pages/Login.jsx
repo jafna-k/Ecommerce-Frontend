@@ -1,5 +1,4 @@
 
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../../services/api";
@@ -79,67 +78,87 @@ function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-[#faf7f0] px-4 py-12 flex items-center justify-center">
-      <div className="w-full max-w-5xl grid md:grid-cols-2 overflow-hidden rounded-3xl border border-[#e8dfd2] bg-[#fffdf9] shadow-[0_20px_60px_rgba(18,63,50,0.10)]">
+    <div className="flex min-h-screen items-center justify-center bg-[#f7f5ef] px-4 py-10 sm:px-6">
+      <div className="grid w-full max-w-5xl overflow-hidden rounded-[28px] border border-[#e8e3d8] bg-white shadow-[0_25px_70px_rgba(30,55,42,0.12)] md:grid-cols-2">
 
-        {/* Left design section */}
-        <div className="relative hidden md:flex flex-col justify-between overflow-hidden bg-[#123f32] p-10 text-[#fffdf9]">
-          <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full border border-white/10" />
-          <div className="absolute -bottom-24 -left-20 h-72 w-72 rounded-full border border-white/10" />
+        {/* Left brand section */}
+        <div className="relative hidden min-h-[600px] flex-col justify-between overflow-hidden bg-[#173d30] p-10 text-white md:flex lg:p-14">
 
-          <Link
-            to="/"
-            className="relative text-2xl font-bold tracking-[0.2em]"
-          >
-            DRESS <span className="text-[#d9c9a8]">SHOP</span>
+          <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full border border-white/10" />
+          <div className="absolute -bottom-24 -left-20 h-80 w-80 rounded-full border border-white/10" />
+
+          <div className="absolute right-12 top-28 h-32 w-32 rounded-full bg-[#d9c6a1]/10 blur-2xl" />
+
+          <Link to="/" className="relative z-10 inline-block">
+            <span className="text-3xl font-bold tracking-[0.16em]">
+              MODEZA
+            </span>
+            <span className="mt-2 block text-[10px] tracking-[0.42em] text-[#d9c6a1]">
+              STYLE YOUR STORY
+            </span>
           </Link>
 
-          <div className="relative z-10 py-12">
-            <p className="mb-4 text-sm uppercase tracking-[0.3em] text-[#d9c9a8]">
-              Welcome to Dress Shop
-            </p>
+          <div className="relative z-10 py-10">
+            <span className="mb-5 inline-block rounded-full border border-white/20 px-4 py-2 text-[10px] uppercase tracking-[0.25em] text-[#e2d2b4]">
+              The Art of Dressing
+            </span>
 
-            <h1 className="font-serif text-5xl leading-tight">
-              Elegance in
+            <h1 className="font-serif text-5xl leading-[1.2] lg:text-6xl">
+              Wear Your
               <br />
-              Every Detail.
+              <span className="italic text-[#d9c6a1]">Confidence.</span>
             </h1>
 
-            <p className="mt-6 max-w-sm leading-7 text-[#e4e8e2]">
-              Discover styles that reflect your personality.
-              Your perfect dress is just a step away.
+            <p className="mt-6 max-w-sm text-sm leading-7 text-[#d7e0d9]">
+              Discover timeless essentials and contemporary styles
+              designed to make every moment feel special.
             </p>
 
-            <div className="mt-8 h-1 w-20 rounded-full bg-[#d9c9a8]" />
+            <div className="mt-9 flex items-center gap-3">
+              <div className="h-px w-12 bg-[#d9c6a1]" />
+              <span className="text-xs tracking-[0.2em] text-[#e4d7bd]">
+                ELEVATE YOUR EVERYDAY
+              </span>
+            </div>
           </div>
 
-          <p className="relative text-sm text-[#d4dfd8]">
-            Timeless style. Everyday elegance.
+          <p className="relative z-10 text-xs tracking-wide text-[#c2d0c7]">
+            Thoughtful style. Effortless elegance.
           </p>
         </div>
 
         {/* Login form */}
-        <div className="flex items-center justify-center px-6 py-10 sm:px-10 md:px-12">
+        <div className="flex items-center justify-center px-6 py-10 sm:px-10 md:px-12 lg:px-14">
           <div className="w-full max-w-md">
 
             <Link
               to="/"
-              className="mb-8 inline-block text-sm font-semibold text-[#124536] hover:text-[#0b3428] md:hidden"
+              className="mb-8 inline-block text-sm font-medium text-[#315a47] transition hover:text-[#173d30] md:hidden"
             >
               ← Back to Home
             </Link>
 
+            {/* Mobile brand */}
+            <Link to="/" className="mb-8 inline-block md:hidden">
+              <span className="text-2xl font-bold tracking-[0.15em] text-[#173d30]">
+                MODEZA
+              </span>
+              <span className="mt-1 block text-[9px] tracking-[0.35em] text-[#9b8969]">
+                STYLE YOUR STORY
+              </span>
+            </Link>
+
             <div className="mb-8">
-              <p className="mb-3 text-sm font-semibold uppercase tracking-[0.22em] text-[#8a806f]">
-                Your account
+              <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.28em] text-[#a28e6c]">
+                Welcome Back
               </p>
 
-              <h2 className="font-serif text-4xl font-bold text-[#123f32]">
-                Welcome Back
+              <h2 className="font-serif text-4xl font-medium text-[#173d30] sm:text-[42px]">
+                Sign In
               </h2>
 
-              <p className="mt-3 text-sm leading-6 text-[#6b7169]">
-                Sign in to continue shopping with us.
+              <p className="mt-3 text-sm leading-6 text-[#777c74]">
+                Welcome to Modeza. Sign in to explore your style.
               </p>
             </div>
 
@@ -153,11 +172,12 @@ function Login() {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-5">
+
               {/* Email */}
               <div>
                 <label
                   htmlFor="email"
-                  className="mb-2 block text-sm font-semibold text-[#24352e]"
+                  className="mb-2 block text-sm font-semibold text-[#293b31]"
                 >
                   Email Address
                 </label>
@@ -171,20 +191,18 @@ function Login() {
                   placeholder="you@example.com"
                   autoComplete="email"
                   required
-                  className="w-full rounded-xl border border-[#ded6ca] bg-[#fffdf9] px-4 py-3.5 text-[#24352e] outline-none transition placeholder:text-[#aaa397] focus:border-[#164d3d] focus:ring-4 focus:ring-[#164d3d]/10"
+                  className="w-full rounded-xl border border-[#e3e0d7] bg-[#fcfbf8] px-4 py-3.5 text-sm text-[#26382e] outline-none transition placeholder:text-[#aaa69d] focus:border-[#315a47] focus:ring-4 focus:ring-[#315a47]/10"
                 />
               </div>
 
               {/* Password */}
               <div>
-                <div className="mb-2 flex items-center justify-between gap-3">
-                  <label
-                    htmlFor="password"
-                    className="block text-sm font-semibold text-[#24352e]"
-                  >
-                    Password
-                  </label>
-                </div>
+                <label
+                  htmlFor="password"
+                  className="mb-2 block text-sm font-semibold text-[#293b31]"
+                >
+                  Password
+                </label>
 
                 <div className="relative">
                   <input
@@ -196,13 +214,14 @@ function Login() {
                     placeholder="Enter your password"
                     autoComplete="current-password"
                     required
-                    className="w-full rounded-xl border border-[#ded6ca] bg-[#fffdf9] px-4 py-3.5 pr-20 text-[#24352e] outline-none transition placeholder:text-[#aaa397] focus:border-[#164d3d] focus:ring-4 focus:ring-[#164d3d]/10"
+                    className="w-full rounded-xl border border-[#e3e0d7] bg-[#fcfbf8] px-4 py-3.5 pr-16 text-sm text-[#26382e] outline-none transition placeholder:text-[#aaa69d] focus:border-[#315a47] focus:ring-4 focus:ring-[#315a47]/10"
                   />
 
                   <button
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-[#124536] hover:text-[#0b3428]"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-[#315a47] transition hover:text-[#173d30]"
                   >
                     {showPassword ? "Hide" : "Show"}
                   </button>
@@ -213,25 +232,30 @@ function Login() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-xl bg-[#124536] px-5 py-3.5 font-semibold text-white shadow-md transition duration-200 hover:bg-[#0b3428] hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-[#124536]/20 disabled:cursor-not-allowed disabled:opacity-60"
+                className="group mt-2 flex w-full items-center justify-center gap-3 rounded-xl bg-[#173d30] px-5 py-4 text-sm font-semibold tracking-wide text-white shadow-md transition duration-300 hover:bg-[#245541] hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-[#315a47]/20 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loading ? "Signing in..." : "Sign In"}
+                {!loading && (
+                  <span className="transition-transform duration-300 group-hover:translate-x-1">
+                    →
+                  </span>
+                )}
               </button>
             </form>
 
             <div className="my-7 flex items-center gap-4">
-              <div className="h-px flex-1 bg-[#e8dfd2]" />
-              <span className="text-xs uppercase tracking-wider text-[#968d80]">
-                New to Dress Shop?
+              <div className="h-px flex-1 bg-[#e9e5dc]" />
+              <span className="text-[10px] uppercase tracking-[0.2em] text-[#a29c90]">
+                New to Modeza?
               </span>
-              <div className="h-px flex-1 bg-[#e8dfd2]" />
+              <div className="h-px flex-1 bg-[#e9e5dc]" />
             </div>
 
-            <p className="text-center text-sm text-[#6b7169]">
+            <p className="text-center text-sm text-[#777c74]">
               Don't have an account?{" "}
               <Link
                 to="/register"
-                className="font-bold text-[#124536] underline-offset-4 hover:text-[#0b3428] hover:underline"
+                className="font-bold text-[#245541] underline-offset-4 transition hover:text-[#173d30] hover:underline"
               >
                 Create Account
               </Link>
@@ -239,11 +263,14 @@ function Login() {
 
             <Link
               to="/products"
-              className="mt-6 block text-center text-sm font-medium text-[#81796d] transition hover:text-[#124536]"
+              className="mt-7 block text-center text-xs font-medium tracking-wide text-[#898579] transition hover:text-[#245541]"
             >
               Continue shopping →
             </Link>
 
+            <p className="mt-10 text-center text-[10px] tracking-wide text-[#aaa69d]">
+              © 2026 MODEZA. STYLE YOUR STORY.
+            </p>
           </div>
         </div>
       </div>

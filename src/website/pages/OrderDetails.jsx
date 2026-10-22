@@ -1,7 +1,450 @@
 
+// import { useEffect, useState } from "react";
+// import { Link, useParams } from "react-router-dom";
+// import api from "../../services/api";
+
+// function OrderDetails() {
+//   const { id } = useParams();
+
+//   const [order, setOrder] = useState(null);
+//   const [loading, setLoading] = useState(true);
+//   const [error, setError] = useState("");
+
+//   useEffect(() => {
+//     let active = true;
+
+//     async function fetchOrder() {
+//       try {
+//         setLoading(true);
+//         setError("");
+
+//         const response = await api.get(`/order/${id}`);
+//         const result = response.data;
+//         const data = result?.data ?? result?.order ?? result;
+
+//         if (active) setOrder(data);
+//       } catch (err) {
+//         console.error("ORDER DETAILS ERROR:", err);
+
+//         if (active) {
+//           setError(
+//             err.response?.data?.message ||
+//               "Unable to load order details."
+//           );
+//         }
+//       } finally {
+//         if (active) setLoading(false);
+//       }
+//     }
+
+//     fetchOrder();
+
+//     return () => {
+//       active = false;
+//     };
+//   }, [id]);
+
+//   const formatPrice = (value) =>
+//     Number(value || 0).toLocaleString("en-IN");
+
+//   if (loading) {
+//     return (
+//       <main className="flex min-h-[70vh] flex-col items-center justify-center gap-4 bg-[#faf7f0] text-[#124536]">
+//         <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#e8dfd2] border-t-[#124536]" />
+//         <p className="text-sm font-medium">
+//           Loading your order details...
+//         </p>
+//       </main>
+//     );
+//   }
+
+//   if (error || !order) {
+//     return (
+//       <main className="flex min-h-[70vh] items-center justify-center bg-[#faf7f0] px-4 py-12">
+//         <div className="w-full max-w-lg rounded-2xl border border-[#e8dfd2] bg-[#fffdf9] p-8 text-center shadow-sm">
+//           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#f0eee4] text-3xl text-[#124536]">
+//             !
+//           </div>
+
+//           <h2 className="mt-5 font-serif text-2xl font-bold text-[#123f32]">
+//             {error || "Order not found."}
+//           </h2>
+
+//           <p className="mt-3 text-sm leading-6 text-[#81796d]">
+//             We couldn't display this order. Please try again or return
+//             to your orders.
+//           </p>
+
+//           <Link
+//             to="/orders"
+//             className="mt-6 inline-flex rounded-xl bg-[#124536] px-6 py-3 font-semibold text-white transition hover:bg-[#0b3428]"
+//           >
+//             Back to My Orders
+//           </Link>
+//         </div>
+//       </main>
+//     );
+//   }
+
+//   const address = order.shippingAddress || {};
+//   const items = order.items || [];
+
+//   const steps = [
+//     "Pending",
+//     "Confirmed",
+//     "Packed",
+//     "Shipped",
+//     "Delivered",
+//   ];
+
+//   const currentStatus = order.status || "Pending";
+//   const currentIndex = steps.indexOf(currentStatus);
+//   const isCancelled = currentStatus === "Cancelled";
+
+//   return (
+//     <main className="min-h-screen bg-[#faf7f0] px-4 py-10 text-[#24352e] sm:px-6 lg:px-8">
+//       <div className="mx-auto max-w-6xl">
+
+//         {/* Back link */}
+//         <Link
+//           to="/orders"
+//           className="inline-flex items-center gap-2 text-sm font-semibold text-[#124536] transition hover:text-[#0b3428] hover:underline"
+//         >
+//           <span>←</span> Back to My Orders
+//         </Link>
+
+//         {/* Page heading */}
+//         <div className="mb-8 mt-7 flex flex-col justify-between gap-5 border-b border-[#e8dfd2] pb-7 sm:flex-row sm:items-end">
+//           <div>
+//             <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#81796d]">
+//               Dress Shop · Your Purchase
+//             </p>
+
+//             <h1 className="mt-3 font-serif text-4xl font-bold text-[#123f32] sm:text-5xl">
+//               Order Details
+//             </h1>
+
+//             <p className="mt-3 text-sm text-[#6b7169]">
+//               Order #
+//               <span className="font-semibold text-[#124536]">
+//                 {String(order._id).slice(-8).toUpperCase()}
+//               </span>
+//             </p>
+//           </div>
+
+//           <span
+//             className={`inline-flex w-fit items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold ${
+//               isCancelled
+//                 ? "border-red-200 bg-red-50 text-red-700"
+//                 : currentStatus === "Delivered"
+//                   ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+//                   : "border-[#cddacb] bg-[#eaf0e9] text-[#124536]"
+//             }`}
+//           >
+//             <span
+//               className={`h-2 w-2 rounded-full ${
+//                 isCancelled
+//                   ? "bg-red-500"
+//                   : currentStatus === "Delivered"
+//                     ? "bg-emerald-600"
+//                     : "bg-[#557665]"
+//               }`}
+//             />
+//             {currentStatus}
+//           </span>
+//         </div>
+
+//         {/* Order status */}
+//         <section className="mb-7 rounded-2xl border border-[#e8dfd2] bg-[#fffdf9] p-5 shadow-sm sm:p-8">
+//           <div className="mb-7 flex items-center gap-3">
+//             <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#eaf0e9] text-xl text-[#124536]">
+//               ✓
+//             </div>
+
+//             <div>
+//               <h2 className="font-serif text-2xl font-bold text-[#123f32]">
+//                 Order Status
+//               </h2>
+//               <p className="mt-1 text-sm text-[#81796d]">
+//                 Track the progress of your order.
+//               </p>
+//             </div>
+//           </div>
+
+//           {isCancelled ? (
+//             <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+//               This order has been cancelled.
+//             </div>
+//           ) : (
+//             <div className="grid grid-cols-2 gap-5 sm:grid-cols-5 sm:gap-3">
+//               {steps.map((step, index) => {
+//                 const completed = currentIndex >= index;
+//                 const active = currentIndex === index;
+
+//                 return (
+//                   <div
+//                     key={step}
+//                     className="relative flex items-center gap-3 sm:flex-col sm:items-center sm:text-center"
+//                   >
+//                     {index < steps.length - 1 && (
+//                       <div
+//                         className={`absolute left-4 top-9 hidden h-0.5 w-[calc(100%-0.5rem)] sm:block ${
+//                           currentIndex > index
+//                             ? "bg-[#124536]"
+//                             : "bg-[#e8dfd2]"
+//                         }`}
+//                       />
+//                     )}
+
+//                     <div
+//                       className={`relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-sm font-bold ${
+//                         completed
+//                           ? "border-[#124536] bg-[#124536] text-white"
+//                           : "border-[#ded6ca] bg-[#faf7f0] text-[#81796d]"
+//                       } ${
+//                         active
+//                           ? "ring-4 ring-[#124536]/10"
+//                           : ""
+//                       }`}
+//                     >
+//                       {currentIndex > index ? "✓" : index + 1}
+//                     </div>
+
+//                     <span
+//                       className={`text-sm sm:mt-3 ${
+//                         active
+//                           ? "font-bold text-[#124536]"
+//                           : completed
+//                             ? "font-medium text-[#24352e]"
+//                             : "text-[#968d80]"
+//                       }`}
+//                     >
+//                       {step}
+//                     </span>
+//                   </div>
+//                 );
+//               })}
+//             </div>
+//           )}
+
+//           <div className="mt-7 border-t border-[#e8dfd2] pt-5 text-sm text-[#81796d]">
+//             Order placed on:{" "}
+//             <span className="font-semibold text-[#24352e]">
+//               {order.createdAt
+//                 ? new Date(order.createdAt).toLocaleDateString("en-IN", {
+//                     day: "2-digit",
+//                     month: "long",
+//                     year: "numeric",
+//                   })
+//                 : "—"}
+//             </span>
+//           </div>
+//         </section>
+
+//         {/* Items ordered */}
+//         <section className="mb-7 overflow-hidden rounded-2xl border border-[#e8dfd2] bg-[#fffdf9] shadow-sm">
+//           <div className="border-b border-[#e8dfd2] px-5 py-5 sm:px-8">
+//             <h2 className="font-serif text-2xl font-bold text-[#123f32]">
+//               Items Ordered
+//             </h2>
+//             <p className="mt-1 text-sm text-[#81796d]">
+//               {items.length} item(s) in this order
+//             </p>
+//           </div>
+
+//           {items.length === 0 ? (
+//             <p className="p-6 text-sm text-[#81796d]">
+//               No item details available.
+//             </p>
+//           ) : (
+//             <div className="divide-y divide-[#e8dfd2]">
+//               {items.map((item, index) => {
+//                 const variant = item.productVariant || {};
+//                 const product = variant.product || {};
+//                 const quantity = Number(item.quantity || 0);
+//                 const price = Number(item.price || 0);
+//                 const subtotal = Number(
+//                   item.subtotal ?? quantity * price
+//                 );
+
+//                 const image =
+//                   product.images?.[0] || product.image || "";
+
+//                 const imageUrl = image
+//                   ? image.startsWith("http://") ||
+//                     image.startsWith("https://")
+//                     ? image
+//                     : `http://localhost:5000/${image.replace(/^\/+/, "")}`
+//                   : "https://placehold.co/200x240?text=Dress";
+
+//                 return (
+//                   <article
+//                     key={item._id || index}
+//                     className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:p-7"
+//                   >
+//                     <img
+//                       src={imageUrl}
+//                       alt={product.name || "Ordered product"}
+//                       onError={(event) => {
+//                         event.currentTarget.onerror = null;
+//                         event.currentTarget.src =
+//                           "https://placehold.co/200x240?text=Dress";
+//                       }}
+//                       className="h-36 w-full rounded-xl bg-[#f0eee7] object-cover sm:w-28"
+//                     />
+
+//                     <div className="min-w-0 flex-1">
+//                       <h3 className="font-serif text-xl font-bold text-[#123f32]">
+//                         {product.name || variant.sku || "Dress"}
+//                       </h3>
+
+//                       <p className="mt-2 text-xs text-[#81796d]">
+//                         SKU: {variant.sku || "—"}
+//                       </p>
+
+//                       <div className="mt-3 flex flex-wrap gap-2">
+//                         <span className="rounded-md border border-[#e8dfd2] bg-[#faf7f0] px-3 py-1.5 text-xs text-[#24352e]">
+//                           Size: {variant.size || "—"}
+//                         </span>
+//                         <span className="rounded-md border border-[#e8dfd2] bg-[#faf7f0] px-3 py-1.5 text-xs text-[#24352e]">
+//                           Color: {variant.color || "—"}
+//                         </span>
+//                       </div>
+
+//                       <p className="mt-3 text-sm text-[#6b7169]">
+//                         Quantity: {quantity} × ₹{formatPrice(price)}
+//                       </p>
+//                     </div>
+
+//                     <div className="flex items-center justify-between border-t border-[#e8dfd2] pt-4 sm:min-w-28 sm:flex-col sm:items-end sm:border-0 sm:pt-0">
+//                       <span className="text-xs text-[#81796d] sm:mb-2">
+//                         Item total
+//                       </span>
+//                       <strong className="text-lg text-[#124536]">
+//                         ₹{formatPrice(subtotal)}
+//                       </strong>
+//                     </div>
+//                   </article>
+//                 );
+//               })}
+//             </div>
+//           )}
+//         </section>
+
+//         {/* Address and payment */}
+//         <div className="grid grid-cols-1 items-start gap-7 md:grid-cols-2">
+
+//           {/* Delivery address */}
+//           <section className="rounded-2xl border border-[#e8dfd2] bg-[#fffdf9] p-6 shadow-sm sm:p-7">
+//             <div className="mb-6 flex items-center gap-3 border-b border-[#e8dfd2] pb-5">
+//               <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#eaf0e9] text-xl text-[#124536]">
+//                 ♧
+//               </div>
+//               <h2 className="font-serif text-2xl font-bold text-[#123f32]">
+//                 Delivery Address
+//               </h2>
+//             </div>
+
+//             <div className="space-y-3 text-sm leading-6 text-[#6b7169]">
+//               <p className="text-base font-bold text-[#123f32]">
+//                 {address.name || "—"}
+//               </p>
+//               <p>{address.phone || "—"}</p>
+//               <p>{address.address || "—"}</p>
+//               <p>
+//                 {[address.city, address.state]
+//                   .filter(Boolean)
+//                   .join(", ")}
+//                 {address.pincode ? ` - ${address.pincode}` : ""}
+//               </p>
+//             </div>
+//           </section>
+
+//           {/* Payment summary */}
+//           <section className="rounded-2xl border border-[#e8dfd2] bg-[#fffdf9] p-6 shadow-sm sm:p-7">
+//             <div className="mb-6 flex items-center gap-3 border-b border-[#e8dfd2] pb-5">
+//               <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#eaf0e9] text-xl text-[#124536]">
+//                 ₹
+//               </div>
+//               <h2 className="font-serif text-2xl font-bold text-[#123f32]">
+//                 Payment Summary
+//               </h2>
+//             </div>
+
+//             <div className="space-y-5 text-sm">
+//               <div className="flex items-center justify-between gap-4">
+//                 <span className="text-[#6b7169]">Payment Method</span>
+//                 <span className="font-semibold text-[#24352e]">
+//                   {order.paymentMethod || "—"}
+//                 </span>
+//               </div>
+
+//               <div className="flex items-center justify-between gap-4">
+//                 <span className="text-[#6b7169]">Payment Status</span>
+//                 <span className="rounded-full bg-[#eaf0e9] px-3 py-1 text-xs font-semibold text-[#124536]">
+//                   {order.paymentStatus || "—"}
+//                 </span>
+//               </div>
+
+//               <div className="flex items-center justify-between gap-4">
+//                 <span className="text-[#6b7169]">Subtotal</span>
+//                 <span className="font-medium text-[#24352e]">
+//                   ₹{formatPrice(order.subtotal)}
+//                 </span>
+//               </div>
+
+//               <div className="flex items-center justify-between gap-4">
+//                 <span className="text-[#6b7169]">Shipping</span>
+//                 <span className="font-medium text-[#24352e]">
+//                   ₹{formatPrice(order.shippingCharge)}
+//                 </span>
+//               </div>
+
+//               <div className="border-t border-dashed border-[#ded6ca]" />
+
+//               <div className="flex items-center justify-between gap-4">
+//                 <span className="font-bold text-[#123f32]">
+//                   Total Amount
+//                 </span>
+//                 <strong className="text-2xl text-[#124536]">
+//                   ₹{formatPrice(order.totalAmount)}
+//                 </strong>
+//               </div>
+//             </div>
+//           </section>
+//         </div>
+
+//         {/* Bottom action */}
+//         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+//           <Link
+//             to="/orders"
+//             className="inline-flex items-center justify-center rounded-xl bg-[#124536] px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-[#0b3428]"
+//           >
+//             View My Orders
+//           </Link>
+
+//           <Link
+//             to="/products"
+//             className="inline-flex items-center justify-center rounded-xl border border-[#124536] px-6 py-3.5 text-sm font-semibold text-[#124536] transition hover:bg-[#124536] hover:text-white"
+//           >
+//             Continue Shopping
+//           </Link>
+//         </div>
+//       </div>
+//     </main>
+//   );
+// }
+
+// export default OrderDetails;
+
+
+
+
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import api from "../../services/api";
+
+const API_ORIGIN = "http://localhost:5000";
 
 function OrderDetails() {
   const { id } = useParams();
@@ -45,14 +488,43 @@ function OrderDetails() {
   }, [id]);
 
   const formatPrice = (value) =>
-    Number(value || 0).toLocaleString("en-IN");
+    Number(value || 0).toLocaleString("en-IN", {
+      maximumFractionDigits: 2,
+    });
+
+  const formatDate = (date) => {
+    if (!date) return "—";
+
+    return new Date(date).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
+  };
+
+  const getStatusStyle = (status) => {
+    const styles = {
+      Pending: "border-amber-200 bg-amber-50 text-amber-800",
+      Confirmed: "border-teal-200 bg-teal-50 text-teal-800",
+      Packed: "border-orange-200 bg-orange-50 text-orange-800",
+      Shipped: "border-blue-200 bg-blue-50 text-blue-800",
+      Delivered: "border-emerald-200 bg-emerald-50 text-emerald-800",
+      Cancelled: "border-red-200 bg-red-50 text-red-700",
+    };
+
+    return styles[status] ||
+      "border-[#d8e4d9] bg-[#edf3eb] text-[#164d3d]";
+  };
 
   if (loading) {
     return (
-      <main className="flex min-h-[70vh] flex-col items-center justify-center gap-4 bg-[#faf7f0] text-[#124536]">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#e8dfd2] border-t-[#124536]" />
-        <p className="text-sm font-medium">
-          Loading your order details...
+      <main className="flex min-h-[70vh] flex-col items-center justify-center gap-4 bg-[#faf7f0] px-4 text-[#164d3d]">
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#e8dfd2] border-t-[#164d3d]" />
+        <h2 className="font-serif text-2xl font-bold">
+          Loading your order
+        </h2>
+        <p className="text-sm text-[#81796d]">
+          Preparing your MODEZA order details...
         </p>
       </main>
     );
@@ -61,33 +533,33 @@ function OrderDetails() {
   if (error || !order) {
     return (
       <main className="flex min-h-[70vh] items-center justify-center bg-[#faf7f0] px-4 py-12">
-        <div className="w-full max-w-lg rounded-2xl border border-[#e8dfd2] bg-[#fffdf9] p-8 text-center shadow-sm">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#f0eee4] text-3xl text-[#124536]">
+        <section className="w-full max-w-md rounded-3xl border border-[#e8dfd2] bg-[#fffdf9] p-8 text-center shadow-sm">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#f4eee2] text-2xl font-bold text-[#164d3d]">
             !
           </div>
 
           <h2 className="mt-5 font-serif text-2xl font-bold text-[#123f32]">
-            {error || "Order not found."}
+            {error || "Order not found"}
           </h2>
 
           <p className="mt-3 text-sm leading-6 text-[#81796d]">
-            We couldn't display this order. Please try again or return
-            to your orders.
+            We couldn't display your order. Please return to your
+            orders and try again.
           </p>
 
           <Link
             to="/orders"
-            className="mt-6 inline-flex rounded-xl bg-[#124536] px-6 py-3 font-semibold text-white transition hover:bg-[#0b3428]"
+            className="mt-6 inline-flex rounded-xl bg-[#164d3d] px-6 py-3 font-semibold text-white transition hover:bg-[#103a2e]"
           >
-            Back to My Orders
+            ← Back to My Orders
           </Link>
-        </div>
+        </section>
       </main>
     );
   }
 
   const address = order.shippingAddress || {};
-  const items = order.items || [];
+  const items = Array.isArray(order.items) ? order.items : [];
 
   const steps = [
     "Pending",
@@ -102,81 +574,87 @@ function OrderDetails() {
   const isCancelled = currentStatus === "Cancelled";
 
   return (
-    <main className="min-h-screen bg-[#faf7f0] px-4 py-10 text-[#24352e] sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-[#faf7f0] px-4 py-7 text-[#26372f] sm:px-6 sm:py-10 lg:px-8">
       <div className="mx-auto max-w-6xl">
 
-        {/* Back link */}
+        {/* Back navigation */}
         <Link
           to="/orders"
-          className="inline-flex items-center gap-2 text-sm font-semibold text-[#124536] transition hover:text-[#0b3428] hover:underline"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-[#164d3d] transition hover:text-[#103a2e] hover:underline"
         >
           <span>←</span> Back to My Orders
         </Link>
 
-        {/* Page heading */}
-        <div className="mb-8 mt-7 flex flex-col justify-between gap-5 border-b border-[#e8dfd2] pb-7 sm:flex-row sm:items-end">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#81796d]">
-              Dress Shop · Your Purchase
-            </p>
+        {/* Hero heading */}
+        <header className="relative mt-6 overflow-hidden rounded-3xl border border-[#e8dfd2] bg-[#fffdf9] px-6 py-8 sm:px-10 sm:py-10">
+          <div className="absolute -right-12 -top-16 h-52 w-52 rounded-full bg-[#edf2e8]" />
+          <div className="absolute -bottom-20 right-40 h-36 w-36 rounded-full bg-[#f4eee2]" />
 
-            <h1 className="mt-3 font-serif text-4xl font-bold text-[#123f32] sm:text-5xl">
-              Order Details
-            </h1>
+          <div className="relative z-10 flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#8b806f]">
+                MODEZA · Your Purchase
+              </p>
 
-            <p className="mt-3 text-sm text-[#6b7169]">
-              Order #
-              <span className="font-semibold text-[#124536]">
-                {String(order._id).slice(-8).toUpperCase()}
-              </span>
-            </p>
-          </div>
+              <h1 className="mt-3 font-serif text-4xl font-bold tracking-tight text-[#123f32] sm:text-5xl">
+                Order Details
+              </h1>
 
-          <span
-            className={`inline-flex w-fit items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold ${
-              isCancelled
-                ? "border-red-200 bg-red-50 text-red-700"
-                : currentStatus === "Delivered"
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                  : "border-[#cddacb] bg-[#eaf0e9] text-[#124536]"
-            }`}
-          >
+              <p className="mt-4 text-sm text-[#77786e]">
+                Order Reference{" "}
+                <span className="font-bold text-[#164d3d]">
+                  #{String(order._id || "").slice(-8).toUpperCase()}
+                </span>
+              </p>
+
+              <p className="mt-2 text-xs text-[#81796d]">
+                Placed on {formatDate(order.createdAt)}
+              </p>
+            </div>
+
             <span
-              className={`h-2 w-2 rounded-full ${
-                isCancelled
-                  ? "bg-red-500"
-                  : currentStatus === "Delivered"
-                    ? "bg-emerald-600"
-                    : "bg-[#557665]"
-              }`}
-            />
-            {currentStatus}
-          </span>
-        </div>
+              className={`inline-flex w-fit items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-bold ${getStatusStyle(currentStatus)}`}
+            >
+              <span className="h-2 w-2 rounded-full bg-current" />
+              {currentStatus}
+            </span>
+          </div>
+        </header>
 
-        {/* Order status */}
-        <section className="mb-7 rounded-2xl border border-[#e8dfd2] bg-[#fffdf9] p-5 shadow-sm sm:p-8">
-          <div className="mb-7 flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#eaf0e9] text-xl text-[#124536]">
-              ✓
+        {/* Order tracking */}
+        <section className="mt-7 rounded-3xl border border-[#e8dfd2] bg-[#fffdf9] p-5 shadow-sm sm:p-8">
+          <div className="mb-8 flex items-center gap-3">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#eaf0e9] text-xl text-[#164d3d]">
+              <span aria-hidden="true">✓</span>
             </div>
 
             <div>
               <h2 className="font-serif text-2xl font-bold text-[#123f32]">
-                Order Status
+                Order Tracking
               </h2>
               <p className="mt-1 text-sm text-[#81796d]">
-                Track the progress of your order.
+                Follow your order from confirmation to delivery.
               </p>
             </div>
           </div>
 
           {isCancelled ? (
-            <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-              This order has been cancelled.
+            <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-5">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white font-bold text-red-600">
+                !
+              </span>
+              <div>
+                <p className="font-semibold text-red-800">
+                  Order Cancelled
+                </p>
+                <p className="mt-1 text-sm leading-6 text-red-700">
+                  This order has been cancelled. Contact customer
+                  support if you need assistance.
+                </p>
+              </div>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-5 sm:grid-cols-5 sm:gap-3">
+            <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-5">
               {steps.map((step, index) => {
                 const completed = currentIndex >= index;
                 const active = currentIndex === index;
@@ -184,69 +662,76 @@ function OrderDetails() {
                 return (
                   <div
                     key={step}
-                    className="relative flex items-center gap-3 sm:flex-col sm:items-center sm:text-center"
+                    className="relative flex items-center gap-3 sm:flex-col sm:gap-0 sm:text-center"
                   >
                     {index < steps.length - 1 && (
                       <div
-                        className={`absolute left-4 top-9 hidden h-0.5 w-[calc(100%-0.5rem)] sm:block ${
+                        className={`absolute left-1/2 top-5 hidden h-0.5 w-full sm:block ${
                           currentIndex > index
-                            ? "bg-[#124536]"
+                            ? "bg-[#164d3d]"
                             : "bg-[#e8dfd2]"
                         }`}
                       />
                     )}
 
                     <div
-                      className={`relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-sm font-bold ${
+                      className={`relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border text-sm font-bold transition ${
                         completed
-                          ? "border-[#124536] bg-[#124536] text-white"
-                          : "border-[#ded6ca] bg-[#faf7f0] text-[#81796d]"
+                          ? "border-[#164d3d] bg-[#164d3d] text-white"
+                          : "border-[#ded6ca] bg-[#faf7f0] text-[#968d80]"
                       } ${
                         active
-                          ? "ring-4 ring-[#124536]/10"
+                          ? "ring-4 ring-[#164d3d]/10"
                           : ""
                       }`}
                     >
                       {currentIndex > index ? "✓" : index + 1}
                     </div>
 
-                    <span
-                      className={`text-sm sm:mt-3 ${
-                        active
-                          ? "font-bold text-[#124536]"
-                          : completed
-                            ? "font-medium text-[#24352e]"
-                            : "text-[#968d80]"
-                      }`}
-                    >
-                      {step}
-                    </span>
+                    <div className="sm:mt-3">
+                      <p
+                        className={`text-sm ${
+                          active
+                            ? "font-bold text-[#164d3d]"
+                            : completed
+                              ? "font-medium text-[#26372f]"
+                              : "text-[#968d80]"
+                        }`}
+                      >
+                        {step}
+                      </p>
+
+                      {active && (
+                        <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-[#81796d]">
+                          Current Stage
+                        </p>
+                      )}
+                    </div>
                   </div>
                 );
               })}
             </div>
           )}
 
-          <div className="mt-7 border-t border-[#e8dfd2] pt-5 text-sm text-[#81796d]">
-            Order placed on:{" "}
-            <span className="font-semibold text-[#24352e]">
-              {order.createdAt
-                ? new Date(order.createdAt).toLocaleDateString("en-IN", {
-                    day: "2-digit",
-                    month: "long",
-                    year: "numeric",
-                  })
-                : "—"}
+          <div className="mt-8 flex flex-col gap-2 border-t border-dashed border-[#e8dfd2] pt-5 text-sm sm:flex-row sm:items-center sm:justify-between">
+            <span className="text-[#81796d]">Order Date</span>
+            <span className="font-semibold text-[#26372f]">
+              {formatDate(order.createdAt)}
             </span>
           </div>
         </section>
 
         {/* Items ordered */}
-        <section className="mb-7 overflow-hidden rounded-2xl border border-[#e8dfd2] bg-[#fffdf9] shadow-sm">
-          <div className="border-b border-[#e8dfd2] px-5 py-5 sm:px-8">
-            <h2 className="font-serif text-2xl font-bold text-[#123f32]">
+        <section className="mt-7 overflow-hidden rounded-3xl border border-[#e8dfd2] bg-[#fffdf9] shadow-sm">
+          <div className="border-b border-[#e8dfd2] px-5 py-6 sm:px-8">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#8b806f]">
+              Your Selection
+            </p>
+
+            <h2 className="mt-2 font-serif text-2xl font-bold text-[#123f32]">
               Items Ordered
             </h2>
+
             <p className="mt-1 text-sm text-[#81796d]">
               {items.length} item(s) in this order
             </p>
@@ -271,58 +756,68 @@ function OrderDetails() {
                   product.images?.[0] || product.image || "";
 
                 const imageUrl = image
-                  ? image.startsWith("http://") ||
-                    image.startsWith("https://")
+                  ? /^https?:\/\//i.test(image)
                     ? image
-                    : `http://localhost:5000/${image.replace(/^\/+/, "")}`
-                  : "https://placehold.co/200x240?text=Dress";
+                    : `${API_ORIGIN}/${image.replace(/^\/+/, "")}`
+                  : "https://placehold.co/240x300?text=MODEZA";
 
                 return (
                   <article
                     key={item._id || index}
-                    className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:p-7"
+                    className="flex flex-col gap-4 p-5 transition hover:bg-[#fdfbf6] sm:flex-row sm:items-center sm:gap-6 sm:p-7"
                   >
-                    <img
-                      src={imageUrl}
-                      alt={product.name || "Ordered product"}
-                      onError={(event) => {
-                        event.currentTarget.onerror = null;
-                        event.currentTarget.src =
-                          "https://placehold.co/200x240?text=Dress";
-                      }}
-                      className="h-36 w-full rounded-xl bg-[#f0eee7] object-cover sm:w-28"
-                    />
+                    <div className="w-full shrink-0 overflow-hidden rounded-2xl border border-[#eee7dc] bg-[#f4f0e7] sm:w-28">
+                      <img
+                        src={imageUrl}
+                        alt={product.name || "Ordered product"}
+                        onError={(event) => {
+                          event.currentTarget.onerror = null;
+                          event.currentTarget.src =
+                            "https://placehold.co/240x300?text=MODEZA";
+                        }}
+                        className="h-52 w-full object-cover transition duration-500 hover:scale-105 sm:h-36"
+                      />
+                    </div>
 
                     <div className="min-w-0 flex-1">
-                      <h3 className="font-serif text-xl font-bold text-[#123f32]">
-                        {product.name || variant.sku || "Dress"}
+                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#8b806f]">
+                        MODEZA Collection
+                      </p>
+
+                      <h3 className="mt-2 break-words font-serif text-xl font-bold text-[#123f32]">
+                        {product.name || variant.sku || "Product"}
                       </h3>
 
-                      <p className="mt-2 text-xs text-[#81796d]">
+                      <p className="mt-1.5 break-all text-xs text-[#81796d]">
                         SKU: {variant.sku || "—"}
                       </p>
 
                       <div className="mt-3 flex flex-wrap gap-2">
-                        <span className="rounded-md border border-[#e8dfd2] bg-[#faf7f0] px-3 py-1.5 text-xs text-[#24352e]">
-                          Size: {variant.size || "—"}
-                        </span>
-                        <span className="rounded-md border border-[#e8dfd2] bg-[#faf7f0] px-3 py-1.5 text-xs text-[#24352e]">
-                          Color: {variant.color || "—"}
-                        </span>
+                        {variant.size && (
+                          <span className="rounded-lg border border-[#e8dfd2] bg-white px-3 py-1.5 text-xs font-medium text-[#526258]">
+                            Size: {variant.size}
+                          </span>
+                        )}
+
+                        {variant.color && (
+                          <span className="rounded-lg border border-[#e8dfd2] bg-white px-3 py-1.5 text-xs font-medium text-[#526258]">
+                            Color: {variant.color}
+                          </span>
+                        )}
                       </div>
 
                       <p className="mt-3 text-sm text-[#6b7169]">
-                        Quantity: {quantity} × ₹{formatPrice(price)}
+                        {quantity} × ₹{formatPrice(price)}
                       </p>
                     </div>
 
-                    <div className="flex items-center justify-between border-t border-[#e8dfd2] pt-4 sm:min-w-28 sm:flex-col sm:items-end sm:border-0 sm:pt-0">
-                      <span className="text-xs text-[#81796d] sm:mb-2">
-                        Item total
-                      </span>
-                      <strong className="text-lg text-[#124536]">
+                    <div className="flex items-center justify-between border-t border-[#e8dfd2] pt-4 sm:min-w-32 sm:flex-col sm:items-end sm:justify-center sm:border-0 sm:pt-0">
+                      <p className="text-xs text-[#81796d]">
+                        Item Total
+                      </p>
+                      <p className="mt-1 text-xl font-bold text-[#164d3d]">
                         ₹{formatPrice(subtotal)}
-                      </strong>
+                      </p>
                     </div>
                   </article>
                 );
@@ -331,26 +826,34 @@ function OrderDetails() {
           )}
         </section>
 
-        {/* Address and payment */}
-        <div className="grid grid-cols-1 items-start gap-7 md:grid-cols-2">
+        {/* Delivery and payment */}
+        <div className="mt-7 grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
 
-          {/* Delivery address */}
-          <section className="rounded-2xl border border-[#e8dfd2] bg-[#fffdf9] p-6 shadow-sm sm:p-7">
-            <div className="mb-6 flex items-center gap-3 border-b border-[#e8dfd2] pb-5">
-              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#eaf0e9] text-xl text-[#124536]">
-                ♧
+          {/* Address card */}
+          <section className="rounded-3xl border border-[#e8dfd2] bg-[#fffdf9] p-6 shadow-sm sm:p-8">
+            <div className="mb-6 flex items-center gap-4 border-b border-[#e8dfd2] pb-5">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#eaf0e9] text-xl text-[#164d3d]">
+                <span aria-hidden="true">⌖</span>
               </div>
-              <h2 className="font-serif text-2xl font-bold text-[#123f32]">
-                Delivery Address
-              </h2>
+
+              <div>
+                <h2 className="font-serif text-2xl font-bold text-[#123f32]">
+                  Delivery Address
+                </h2>
+                <p className="mt-1 text-xs text-[#81796d]">
+                  Shipping information
+                </p>
+              </div>
             </div>
 
-            <div className="space-y-3 text-sm leading-6 text-[#6b7169]">
-              <p className="text-base font-bold text-[#123f32]">
+            <div className="space-y-2 border-l-2 border-[#dce5d9] py-1 pl-4 text-sm leading-6 text-[#6b7169]">
+              <p className="font-bold text-[#123f32]">
                 {address.name || "—"}
               </p>
+
               <p>{address.phone || "—"}</p>
               <p>{address.address || "—"}</p>
+
               <p>
                 {[address.city, address.state]
                   .filter(Boolean)
@@ -361,75 +864,102 @@ function OrderDetails() {
           </section>
 
           {/* Payment summary */}
-          <section className="rounded-2xl border border-[#e8dfd2] bg-[#fffdf9] p-6 shadow-sm sm:p-7">
-            <div className="mb-6 flex items-center gap-3 border-b border-[#e8dfd2] pb-5">
-              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#eaf0e9] text-xl text-[#124536]">
+          <section className="rounded-3xl border border-[#e8dfd2] bg-[#fffdf9] p-6 shadow-sm sm:p-8">
+            <div className="mb-6 flex items-center gap-4 border-b border-[#e8dfd2] pb-5">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#eaf0e9] text-xl font-bold text-[#164d3d]">
                 ₹
               </div>
-              <h2 className="font-serif text-2xl font-bold text-[#123f32]">
-                Payment Summary
-              </h2>
+
+              <div>
+                <h2 className="font-serif text-2xl font-bold text-[#123f32]">
+                  Payment Summary
+                </h2>
+                <p className="mt-1 text-xs text-[#81796d]">
+                  Your order cost breakdown
+                </p>
+              </div>
             </div>
 
             <div className="space-y-5 text-sm">
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-[#6b7169]">Payment Method</span>
-                <span className="font-semibold text-[#24352e]">
+              <div className="flex items-start justify-between gap-4">
+                <span className="text-[#81796d]">Payment Method</span>
+                <span className="max-w-[55%] break-words text-right font-semibold text-[#26372f]">
                   {order.paymentMethod || "—"}
                 </span>
               </div>
 
               <div className="flex items-center justify-between gap-4">
-                <span className="text-[#6b7169]">Payment Status</span>
-                <span className="rounded-full bg-[#eaf0e9] px-3 py-1 text-xs font-semibold text-[#124536]">
+                <span className="text-[#81796d]">Payment Status</span>
+                <span className="rounded-full bg-[#eaf0e9] px-3 py-1.5 text-xs font-semibold text-[#164d3d]">
                   {order.paymentStatus || "—"}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-[#6b7169]">Subtotal</span>
-                <span className="font-medium text-[#24352e]">
-                  ₹{formatPrice(order.subtotal)}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-[#6b7169]">Shipping</span>
-                <span className="font-medium text-[#24352e]">
-                  ₹{formatPrice(order.shippingCharge)}
                 </span>
               </div>
 
               <div className="border-t border-dashed border-[#ded6ca]" />
 
               <div className="flex items-center justify-between gap-4">
-                <span className="font-bold text-[#123f32]">
-                  Total Amount
+                <span className="text-[#6b7169]">Subtotal</span>
+                <span className="font-medium text-[#26372f]">
+                  ₹{formatPrice(order.subtotal)}
                 </span>
-                <strong className="text-2xl text-[#124536]">
+              </div>
+
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-[#6b7169]">Shipping</span>
+                <span className="font-medium text-[#26372f]">
+                  ₹{formatPrice(order.shippingCharge)}
+                </span>
+              </div>
+
+              <div className="border-t border-[#ded6ca]" />
+
+              <div className="rounded-2xl border border-[#dce5d9] bg-[#eaf0e9] p-5">
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#557665]">
+                  Total Amount
+                </p>
+
+                <p className="mt-2 font-serif text-3xl font-bold text-[#164d3d]">
                   ₹{formatPrice(order.totalAmount)}
-                </strong>
+                </p>
+
+                <p className="mt-2 text-xs text-[#557665]">
+                  Includes applicable shipping charges.
+                </p>
               </div>
             </div>
           </section>
         </div>
 
-        {/* Bottom action */}
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-          <Link
-            to="/orders"
-            className="inline-flex items-center justify-center rounded-xl bg-[#124536] px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-[#0b3428]"
-          >
-            View My Orders
-          </Link>
+        {/* Bottom navigation */}
+        <footer className="mt-8 rounded-3xl border border-[#e8dfd2] bg-[#fffdf9] px-5 py-7 text-center sm:px-8">
+          <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#8b806f]">
+            MODEZA
+          </p>
 
-          <Link
-            to="/products"
-            className="inline-flex items-center justify-center rounded-xl border border-[#124536] px-6 py-3.5 text-sm font-semibold text-[#124536] transition hover:bg-[#124536] hover:text-white"
-          >
-            Continue Shopping
-          </Link>
-        </div>
+          <h3 className="mt-2 font-serif text-xl font-bold text-[#123f32]">
+            Thank you for shopping with us.
+          </h3>
+
+          <p className="mt-2 text-sm text-[#81796d]">
+            Discover more pieces that match your style.
+          </p>
+
+          <div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row">
+            <Link
+              to="/orders"
+              className="inline-flex items-center justify-center rounded-xl bg-[#164d3d] px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-[#103a2e]"
+            >
+              ← My Orders
+            </Link>
+
+            <Link
+              to="/products"
+              className="inline-flex items-center justify-center rounded-xl border border-[#164d3d] px-6 py-3.5 text-sm font-semibold text-[#164d3d] transition hover:bg-[#164d3d] hover:text-white"
+            >
+              Continue Shopping →
+            </Link>
+          </div>
+        </footer>
       </div>
     </main>
   );
