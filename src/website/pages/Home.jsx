@@ -170,12 +170,7 @@ function Home() {
                 </span>
               </Link>
 
-              <Link
-                to="/products"
-                className="inline-flex items-center gap-2 rounded-md border border-[#124536] px-6 py-4 text-sm font-semibold text-[#124536] transition hover:bg-[#124536] hover:text-white"
-              >
-                Explore Collection
-              </Link>
+             
             </div>
 
             {/* HIGHLIGHTS */}
