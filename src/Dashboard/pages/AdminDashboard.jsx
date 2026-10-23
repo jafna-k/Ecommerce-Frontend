@@ -1408,9 +1408,869 @@
 
 
 
+// import { useCallback, useEffect, useMemo, useState } from "react";
+// import { Link } from "react-router-dom";
+// import api from "../../services/api";
+
+// const money = (value) =>
+//   `₹${Number(value || 0).toLocaleString("en-IN", {
+//     maximumFractionDigits: 2,
+//   })}`;
+
+// function getAmount(order) {
+//   return Number(
+//     order.totalAmount ?? order.total ?? order.grandTotal ?? 0
+//   );
+// }
+
+// function getCustomer(order) {
+//   return (
+//     order.user?.name ||
+//     order.customer?.name ||
+//     order.shippingAddress?.fullName ||
+//     "Customer"
+//   );
+// }
+
+// function getOrderId(id) {
+//   return `#${String(id || "").slice(-6).toUpperCase()}`;
+// }
+
+// function formatDate(date) {
+//   if (!date || Number.isNaN(new Date(date).getTime())) return "—";
+
+//   return new Date(date).toLocaleDateString("en-IN", {
+//     day: "2-digit",
+//     month: "short",
+//     year: "numeric",
+//   });
+// }
+
+// function getStatusStyle(status) {
+//   switch ((status || "Pending").toLowerCase()) {
+//     case "delivered":
+//       return "bg-emerald-100 text-emerald-800";
+//     case "cancelled":
+//       return "bg-rose-100 text-rose-800";
+//     case "shipped":
+//       return "bg-sky-100 text-sky-800";
+//     case "confirmed":
+//     case "packed":
+//       return "bg-amber-100 text-amber-800";
+//     default:
+//       return "bg-[#F0E8D8] text-[#725D36]";
+//   }
+// }
+
+// function getOrderItems(order) {
+//   return Array.isArray(order.items) ? order.items : [];
+// }
+
+// function getItemProduct(item) {
+//   const variant = item.productVariant;
+//   const product = item.product;
+
+//   if (variant && typeof variant === "object" && variant.product) {
+//     return variant.product;
+//   }
+
+//   if (product && typeof product === "object") {
+//     return product;
+//   }
+
+//   return {};
+// }
+
+// function getCategoryName(item) {
+//   const product = getItemProduct(item);
+//   const category = product.category;
+
+//   if (typeof category === "string") return category;
+//   return category?.name || "Uncategorized";
+// }
+
+// function getItemSales(item) {
+//   const quantity = Number(item.quantity ?? item.qty ?? 1);
+
+//   const product = getItemProduct(item);
+
+//   const variant =
+//     item.productVariant && typeof item.productVariant === "object"
+//       ? item.productVariant
+//       : {};
+
+//   const price = Number(
+//     item.price ??
+//       item.unitPrice ??
+//       variant.price ??
+//       product.price ??
+//       0
+//   );
+
+//   return price * quantity;
+// }
+
+// const CATEGORY_COLORS = [
+//   "#164D3D",
+//   "#71977B",
+//   "#D0B477",
+//   "#A8B9A8",
+//   "#9C8175",
+//   "#7B8EB0",
+//   "#BD8C9C",
+// ];
+
+// function AdminDashboard() {
+//   const [stats, setStats] = useState({
+//     totalCustomers: 0,
+//     totalProducts: 0,
+//     totalOrders: 0,
+//     totalSales: 0,
+//     lowStockItems: 0,
+//   });
+
+//   const [allOrders, setAllOrders] = useState([]);
+//   const [loading, setLoading] = useState(true);
+//   const [error, setError] = useState("");
+//   const [fromDate, setFromDate] = useState("");
+//   const [toDate, setToDate] = useState("");
+//   const [chartPeriod, setChartPeriod] = useState("Year");
+//   const [orderSearch, setOrderSearch] = useState("");
+
+//   const loadDashboard = useCallback(async () => {
+//     setLoading(true);
+//     setError("");
+
+//     try {
+//       const [statsResult, ordersResult] = await Promise.allSettled([
+//         api.get("/admin/dashboard"),
+//         api.get("/admin/orders"),
+//       ]);
+
+//       if (statsResult.status === "rejected") {
+//         const err = statsResult.reason;
+
+//         if (err.response?.status === 401) {
+//           setError("Login expired. Please login again.");
+//         } else if (err.response?.status === 403) {
+//           setError("Admin access required. Login with an admin account.");
+//         } else {
+//           setError(
+//             err.response?.data?.message ||
+//               "Unable to load dashboard statistics."
+//           );
+//         }
+
+//         return;
+//       }
+
+//       const response = statsResult.value.data;
+//       const data = response.data || response;
+
+//       setStats({
+//         totalCustomers: Number(data.totalCustomers ?? 0),
+//         totalProducts: Number(data.totalProducts ?? 0),
+//         totalOrders: Number(data.totalOrders ?? 0),
+//         totalSales: Number(data.totalSales ?? 0),
+//         lowStockItems: Number(data.lowStockItems ?? 0),
+//       });
+
+//       if (ordersResult.status === "fulfilled") {
+//         const result = ordersResult.value.data;
+
+//         const list = Array.isArray(result)
+//           ? result
+//           : Array.isArray(result.data)
+//             ? result.data
+//             : Array.isArray(result.orders)
+//               ? result.orders
+//               : Array.isArray(result.data?.orders)
+//                 ? result.data.orders
+//                 : [];
+
+//         setAllOrders(list);
+//       } else {
+//         setAllOrders([]);
+//       }
+//     } catch (err) {
+//       console.error("Dashboard error:", err);
+//       setError("Something went wrong while loading dashboard.");
+//     } finally {
+//       setLoading(false);
+//     }
+//   }, []);
+
+//   useEffect(() => {
+//     loadDashboard();
+//   }, [loadDashboard]);
+
+//   const filteredOrders = useMemo(() => {
+//     return allOrders.filter((order) => {
+//       if (!order.createdAt) return false;
+
+//       const date = new Date(order.createdAt);
+
+//       if (Number.isNaN(date.getTime())) return false;
+
+//       const day = [
+//         date.getFullYear(),
+//         String(date.getMonth() + 1).padStart(2, "0"),
+//         String(date.getDate()).padStart(2, "0"),
+//       ].join("-");
+
+//       if (fromDate && day < fromDate) return false;
+//       if (toDate && day > toDate) return false;
+
+//       return true;
+//     });
+//   }, [allOrders, fromDate, toDate]);
+
+//   const reportSales = filteredOrders.reduce((total, order) => {
+//     if ((order.status || "").toLowerCase() === "cancelled") {
+//       return total;
+//     }
+
+//     return total + getAmount(order);
+//   }, 0);
+
+//   const cancelledOrders = filteredOrders.filter(
+//     (order) => (order.status || "").toLowerCase() === "cancelled"
+//   ).length;
+
+//   const recentOrders = useMemo(() => {
+//     return [...allOrders]
+//       .sort(
+//         (a, b) =>
+//           new Date(b.createdAt || 0).getTime() -
+//           new Date(a.createdAt || 0).getTime()
+//       )
+//       .slice(0, 5);
+//   }, [allOrders]);
+
+//   // Weekly, daily or monthly sales graph.
+//   const chartData = useMemo(() => {
+//     const now = new Date();
+//     const count = chartPeriod === "Week" ? 7 : chartPeriod === "Month" ? 30 : 12;
+
+//     return Array.from({ length: count }, (_, index) => {
+//       let start;
+//       let end;
+//       let label;
+
+//       if (chartPeriod === "Week") {
+//         start = new Date(now);
+//         start.setHours(0, 0, 0, 0);
+//         start.setDate(now.getDate() - (6 - index));
+
+//         end = new Date(start);
+//         end.setDate(start.getDate() + 1);
+
+//         label = start.toLocaleDateString("en-IN", {
+//           weekday: "short",
+//         });
+//       } else if (chartPeriod === "Month") {
+//         start = new Date(now);
+//         start.setHours(0, 0, 0, 0);
+//         start.setDate(now.getDate() - (count - 1 - index));
+
+//         end = new Date(start);
+//         end.setDate(start.getDate() + 1);
+
+//         label = String(start.getDate());
+//       } else {
+//         start = new Date(now.getFullYear(), index, 1);
+//         end = new Date(now.getFullYear(), index + 1, 1);
+
+//         label = start.toLocaleDateString("en-IN", {
+//           month: "short",
+//         });
+//       }
+
+//       const sales = allOrders.reduce((sum, order) => {
+//         if ((order.status || "").toLowerCase() === "cancelled") {
+//           return sum;
+//         }
+
+//         const orderDate = new Date(order.createdAt);
+
+//         if (
+//           Number.isNaN(orderDate.getTime()) ||
+//           orderDate < start ||
+//           orderDate >= end
+//         ) {
+//           return sum;
+//         }
+
+//         return sum + getAmount(order);
+//       }, 0);
+
+//       return { label, sales };
+//     });
+//   }, [allOrders, chartPeriod]);
+
+//   const chartMax = Math.max(...chartData.map((item) => item.sales), 1);
+
+//   // Category-wise revenue from order item records.
+//   const categorySales = useMemo(() => {
+//     const totals = {};
+
+//     filteredOrders.forEach((order) => {
+//       if ((order.status || "").toLowerCase() === "cancelled") {
+//         return;
+//       }
+
+//       getOrderItems(order).forEach((item) => {
+//         const category = getCategoryName(item);
+//         const amount = getItemSales(item);
+
+//         if (amount > 0) {
+//           totals[category] = (totals[category] || 0) + amount;
+//         }
+//       });
+//     });
+
+//     return Object.entries(totals)
+//       .map(([name, sales]) => ({ name, sales }))
+//       .sort((a, b) => b.sales - a.sales);
+//   }, [filteredOrders]);
+
+//   const categoryTotal = categorySales.reduce(
+//     (sum, item) => sum + item.sales,
+//     0
+//   );
+
+//   const donutGradient = useMemo(() => {
+//     if (!categoryTotal) return "#E8E5DA";
+
+//     let current = 0;
+
+//     const segments = categorySales.map((item, index) => {
+//       const start = current;
+//       current += (item.sales / categoryTotal) * 100;
+
+//       return `${CATEGORY_COLORS[index % CATEGORY_COLORS.length]} ${start}% ${current}%`;
+//     });
+
+//     return `conic-gradient(${segments.join(", ")})`;
+//   }, [categorySales, categoryTotal]);
+
+//   const searchedOrders = useMemo(() => {
+//     const query = orderSearch.trim().toLowerCase();
+
+//     if (!query) return filteredOrders;
+
+//     return filteredOrders.filter((order) => {
+//       return (
+//         getOrderId(order._id).toLowerCase().includes(query) ||
+//         getCustomer(order).toLowerCase().includes(query) ||
+//         String(order.status || "").toLowerCase().includes(query)
+//       );
+//     });
+//   }, [filteredOrders, orderSearch]);
+
+//   const cards = [
+//     {
+//       label: "Total Sales",
+//       value: money(stats.totalSales),
+//       note: "Excluding cancelled orders",
+//       icon: "₹",
+//       bg: "bg-[#F4E9D5]",
+//     },
+//     {
+//       label: "Customers",
+//       value: stats.totalCustomers.toLocaleString("en-IN"),
+//       note: "Registered customers",
+//       icon: "♙",
+//       bg: "bg-[#E3ECE5]",
+//     },
+//     {
+//       label: "Total Orders",
+//       value: stats.totalOrders.toLocaleString("en-IN"),
+//       note: "Orders received",
+//       icon: "▤",
+//       bg: "bg-[#E9E6F0]",
+//     },
+//     {
+//       label: "Products",
+//       value: stats.totalProducts.toLocaleString("en-IN"),
+//       note: "Products in your store",
+//       icon: "♧",
+//       bg: "bg-[#F3E4E0]",
+//     },
+//   ];
+
+//   return (
+//     <main className="min-w-0 space-y-7 text-[#173D32]">
+//       {/* Header */}
+//       <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+//         <div>
+//           <p className="text-[10px] font-bold tracking-[0.24em] text-[#7C897E]">
+//             DRESS SHOP / STORE ANALYTICS
+//           </p>
+//           <h1 className="mt-2 font-serif text-3xl font-bold sm:text-4xl">
+//             Dashboard Overview
+//           </h1>
+//           <p className="mt-2 text-sm text-[#788078]">
+//             Welcome back! Here&apos;s what&apos;s happening in your store.
+//           </p>
+//         </div>
+
+//         <button
+//           type="button"
+//           onClick={loadDashboard}
+//           disabled={loading}
+//           className="inline-flex items-center justify-center gap-2 self-start rounded-xl bg-[#164D3D] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0D382C] disabled:opacity-60 sm:self-auto"
+//         >
+//           <span className="text-lg">↻</span>
+//           {loading ? "Loading..." : "Refresh"}
+//         </button>
+//       </header>
+
+//       {error && (
+//         <div
+//           role="alert"
+//           className="flex flex-col justify-between gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-5 sm:flex-row sm:items-center"
+//         >
+//           <div>
+//             <p className="font-bold text-rose-800">Dashboard error</p>
+//             <p className="mt-1 text-sm text-rose-700">{error}</p>
+//           </div>
+//           <button
+//             type="button"
+//             onClick={loadDashboard}
+//             className="rounded-lg bg-rose-700 px-4 py-2 text-sm font-semibold text-white"
+//           >
+//             Try again
+//           </button>
+//         </div>
+//       )}
+
+//       {/* Statistics */}
+//       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-4">
+//         {cards.map((card) => (
+//           <article
+//             key={card.label}
+//             className="rounded-2xl border border-[#E7E1D5] bg-[#FFFEFA] p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-md sm:p-6"
+//           >
+//             <div className="flex items-center justify-between gap-3">
+//               <p className="text-sm font-medium text-[#758078]">
+//                 {card.label}
+//               </p>
+//               <span
+//                 className={`flex h-11 w-11 items-center justify-center rounded-xl text-xl font-bold text-[#164D3D] ${card.bg}`}
+//               >
+//                 {card.icon}
+//               </span>
+//             </div>
+//             <p className="mt-5 break-words text-2xl font-bold sm:text-3xl">
+//               {loading ? "—" : card.value}
+//             </p>
+//             <p className="mt-2 text-xs text-[#899087]">{card.note}</p>
+//           </article>
+//         ))}
+//       </section>
+
+//       {/* Sales graph */}
+//       <section className="grid grid-cols-1 gap-5 xl:grid-cols-[1.65fr_1fr]">
+//         <article className="min-w-0 rounded-2xl border border-[#E7E1D5] bg-[#FFFEFA] p-5 shadow-sm sm:p-6">
+//           <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+//             <div>
+//               <p className="text-[10px] font-bold tracking-[0.2em] text-[#8A8B7C]">
+//                 PERFORMANCE
+//               </p>
+//               <h2 className="mt-2 font-serif text-xl font-bold">
+//                 Sales Performance
+//               </h2>
+//               <p className="mt-1 text-xs text-[#858A80]">
+//                 Sales from available order records
+//               </p>
+//             </div>
+
+//             <div className="flex rounded-xl bg-[#F3F0E7] p-1">
+//               {["Week", "Month", "Year"].map((period) => (
+//                 <button
+//                   key={period}
+//                   type="button"
+//                   onClick={() => setChartPeriod(period)}
+//                   className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
+//                     chartPeriod === period
+//                       ? "bg-[#164D3D] text-white shadow-sm"
+//                       : "text-[#65756B] hover:bg-white"
+//                   }`}
+//                 >
+//                   {period}
+//                 </button>
+//               ))}
+//             </div>
+//           </div>
+
+//           <div className="mt-8 flex h-56 gap-2 sm:gap-4">
+//             <div className="flex flex-col justify-between pb-7 text-[10px] text-[#8A8E84]">
+//               <span>{money(chartMax)}</span>
+//               <span>{money(chartMax * 0.66)}</span>
+//               <span>{money(chartMax * 0.33)}</span>
+//               <span>₹0</span>
+//             </div>
+
+//             <div
+//               className={`relative grid min-w-0 flex-1 items-end gap-2 sm:gap-3 ${
+//                 chartPeriod === "Year" ? "grid-cols-12" : "grid-cols-7"
+//               }`}
+//             >
+//               <div className="pointer-events-none absolute inset-0 bottom-7 flex flex-col justify-between">
+//                 {[0, 1, 2].map((line) => (
+//                   <div
+//                     key={line}
+//                     className="w-full border-t border-dashed border-[#E9E5DB]"
+//                   />
+//                 ))}
+//               </div>
+
+//               {chartData.map((item, index) => (
+//                 <div
+//                   key={`${item.label}-${index}`}
+//                   className="relative flex h-full min-w-0 flex-col items-center justify-end"
+//                   title={`${item.label}: ${money(item.sales)}`}
+//                 >
+//                   <div className="flex h-full w-full items-end justify-center pb-7">
+//                     <div
+//                       className={`w-full max-w-7 rounded-t-md transition-all duration-300 ${
+//                         item.sales > 0
+//                           ? "bg-[#164D3D] hover:bg-[#36765E]"
+//                           : "bg-[#E7E4DA]"
+//                       }`}
+//                       style={{
+//                         height: `${
+//                           item.sales > 0
+//                             ? Math.max(5, (item.sales / chartMax) * 100)
+//                             : 2
+//                         }%`,
+//                       }}
+//                     />
+//                   </div>
+//                   <span className="absolute bottom-0 text-[10px] text-[#858A80]">
+//                     {item.label}
+//                   </span>
+//                 </div>
+//               ))}
+//             </div>
+//           </div>
+
+//           <p className="mt-4 text-xs text-[#899087]">
+//             {chartPeriod === "Year"
+//               ? "Monthly sales for the current year"
+//               : chartPeriod === "Month"
+//                 ? "Daily sales for the last 30 days"
+//                 : "Daily sales for the last 7 days"}
+//           </p>
+//         </article>
+
+//         {/* Inventory */}
+//         <article className="flex flex-col rounded-2xl border border-[#E7E1D5] bg-[#FFFEFA] p-5 shadow-sm sm:p-6">
+//           <p className="text-[10px] font-bold tracking-[0.2em] text-[#8A8B7C]">
+//             STOCK MANAGEMENT
+//           </p>
+//           <h2 className="mt-2 font-serif text-xl font-bold">
+//             Inventory Overview
+//           </h2>
+//           <p className="mt-1 text-sm text-[#858A80]">
+//             Keep your collection ready for customers.
+//           </p>
+
+//           <div className="my-6 flex flex-1 flex-col justify-center rounded-2xl bg-[#F5F2E9] p-5">
+//             <div className="flex items-center justify-between gap-3">
+//               <div>
+//                 <p className="text-sm text-[#737D72]">Low Stock Items</p>
+//                 <p className="mt-2 text-4xl font-bold">
+//                   {loading ? "—" : stats.lowStockItems}
+//                 </p>
+//               </div>
+//               <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#E9DFC8] text-2xl text-[#82683B]">
+//                 !
+//               </span>
+//             </div>
+//             <p className="mt-4 text-xs leading-5 text-[#858A80]">
+//               Check stock levels and update quantities before items run out.
+//             </p>
+//           </div>
+
+//           <Link
+//             to="/admin/inventory"
+//             className="inline-flex items-center justify-center rounded-xl bg-[#164D3D] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#0D382C]"
+//           >
+//             Manage Inventory →
+//           </Link>
+//         </article>
+//       </section>
+
+//       {/* Category donut wheel */}
+//       <section className="rounded-2xl border border-[#E7E1D5] bg-[#FFFEFA] p-5 shadow-sm sm:p-6">
+//         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+//           <div>
+//             <p className="text-[10px] font-bold tracking-[0.2em] text-[#8A8B7C]">
+//               CATEGORY ANALYTICS
+//             </p>
+//             <h2 className="mt-2 font-serif text-xl font-bold">
+//               Sales by Category
+//             </h2>
+//             <p className="mt-1 text-sm text-[#858A80]">
+//               Revenue distribution across categories
+//             </p>
+//           </div>
+
+//           <span className="rounded-xl bg-[#E3ECE5] px-4 py-2 text-sm font-semibold text-[#164D3D]">
+//             {categorySales.length} Categories
+//           </span>
+//         </div>
+
+//         {categoryTotal > 0 ? (
+//           <div className="mt-7 grid grid-cols-1 items-center gap-8 md:grid-cols-2">
+//             <div className="flex justify-center">
+//               <div
+//                 className="relative flex h-56 w-56 items-center justify-center rounded-full"
+//                 style={{ background: donutGradient }}
+//                 role="img"
+//                 aria-label="Category-wise sales donut chart"
+//               >
+//                 <div className="flex h-36 w-36 flex-col items-center justify-center rounded-full bg-[#FFFEFA] shadow-inner">
+//                   <span className="text-xs text-[#858A80]">
+//                     Total Sales
+//                   </span>
+//                   <span className="mt-2 max-w-full break-words px-2 text-center text-xl font-bold text-[#164D3D]">
+//                     {money(categoryTotal)}
+//                   </span>
+//                 </div>
+//               </div>
+//             </div>
+
+//             <div className="space-y-5">
+//               {categorySales.map((item, index) => {
+//                 const percentage = (item.sales / categoryTotal) * 100;
+//                 const color =
+//                   CATEGORY_COLORS[index % CATEGORY_COLORS.length];
+
+//                 return (
+//                   <div key={item.name}>
+//                     <div className="flex items-center justify-between gap-3">
+//                       <div className="flex min-w-0 items-center gap-3">
+//                         <span
+//                           className="h-3 w-3 shrink-0 rounded-sm"
+//                           style={{ backgroundColor: color }}
+//                         />
+//                         <span className="truncate text-sm font-semibold text-[#173D32]">
+//                           {item.name}
+//                         </span>
+//                       </div>
+//                       <span className="shrink-0 text-sm font-bold text-[#164D3D]">
+//                         {percentage.toFixed(1)}%
+//                       </span>
+//                     </div>
+
+//                     <div className="ml-6 mt-2 flex items-center justify-between gap-3">
+//                       <span className="text-xs text-[#858A80]">
+//                         {money(item.sales)}
+//                       </span>
+//                       <span className="text-xs text-[#858A80]">
+//                         Sales
+//                       </span>
+//                     </div>
+
+//                     <div className="ml-6 mt-2 h-1.5 overflow-hidden rounded-full bg-[#EAE8DF]">
+//                       <div
+//                         className="h-full rounded-full transition-all duration-500"
+//                         style={{
+//                           width: `${percentage}%`,
+//                           backgroundColor: color,
+//                         }}
+//                       />
+//                     </div>
+//                   </div>
+//                 );
+//               })}
+//             </div>
+//           </div>
+//         ) : (
+//           <div className="mt-6 rounded-xl bg-[#F5F2E9] px-5 py-12 text-center">
+//             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#E3ECE5] text-2xl text-[#164D3D]">
+//               ◉
+//             </div>
+//             <h3 className="mt-4 font-semibold text-[#173D32]">
+//               No category sales available
+//             </h3>
+//             <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#858A80]">
+//               Order items-il product category, quantity, price details
+//               populate cheythittundenkil category chart display cheyyum.
+//             </p>
+//           </div>
+//         )}
+//       </section>
+
+     
+//       {/* Recent orders */}
+//       <section className="overflow-hidden rounded-2xl border border-[#E7E1D5] bg-[#FFFEFA] shadow-sm">
+//         <div className="flex flex-col justify-between gap-3 border-b border-[#E7E1D5] p-5 sm:flex-row sm:items-center sm:p-6">
+//           <div>
+//             <h2 className="font-serif text-xl font-bold">Recent Orders</h2>
+//             <p className="mt-1 text-sm text-[#858A80]">
+//               Latest orders received by your store.
+//             </p>
+//           </div>
+//           <Link
+//             to="/admin/orders"
+//             className="text-sm font-bold text-[#164D3D] hover:underline"
+//           >
+//             View All Orders →
+//           </Link>
+//         </div>
+
+//         <div className="overflow-x-auto">
+//           <table className="w-full min-w-[560px] text-left">
+//             <thead className="bg-[#F3F0E7]">
+//               <tr>
+//                 {["Order ID", "Customer", "Amount", "Status"].map((heading) => (
+//                   <th
+//                     key={heading}
+//                     className="px-5 py-4 text-xs font-bold uppercase tracking-wider text-[#758078]"
+//                   >
+//                     {heading}
+//                   </th>
+//                 ))}
+//               </tr>
+//             </thead>
+//             <tbody className="divide-y divide-[#EEE9DF]">
+//               {loading ? (
+//                 <tr>
+//                   <td colSpan={4} className="px-5 py-10 text-center text-sm">
+//                     Loading orders...
+//                   </td>
+//                 </tr>
+//               ) : recentOrders.length === 0 ? (
+//                 <tr>
+//                   <td
+//                     colSpan={4}
+//                     className="px-5 py-10 text-center text-sm text-[#858A80]"
+//                   >
+//                     No recent orders available.
+//                   </td>
+//                 </tr>
+//               ) : (
+//                 recentOrders.map((order) => (
+//                   <tr key={order._id} className="hover:bg-[#FAF8F0]">
+//                     <td className="px-5 py-4 text-sm font-bold text-[#164D3D]">
+//                       {getOrderId(order._id)}
+//                     </td>
+//                     <td className="px-5 py-4 text-sm font-medium">
+//                       {getCustomer(order)}
+//                     </td>
+//                     <td className="whitespace-nowrap px-5 py-4 text-sm font-semibold">
+//                       {money(getAmount(order))}
+//                     </td>
+//                     <td className="px-5 py-4">
+//                       <span
+//                         className={`inline-flex rounded-full px-3 py-1.5 text-xs font-semibold ${getStatusStyle(order.status)}`}
+//                       >
+//                         {order.status || "Pending"}
+//                       </span>
+//                     </td>
+//                   </tr>
+//                 ))
+//               )}
+//             </tbody>
+//           </table>
+//         </div>
+//       </section>
+
+//       {/* Quick management */}
+//       <section>
+//         <div className="mb-5">
+//           <p className="text-[10px] font-bold tracking-[0.2em] text-[#8A8B7C]">
+//             STORE SHORTCUTS
+//           </p>
+//           <h2 className="mt-2 font-serif text-2xl font-bold">
+//             Quick Management
+//           </h2>
+//           <p className="mt-1 text-sm text-[#858A80]">
+//             Access your main store management pages.
+//           </p>
+//         </div>
+
+//         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+//           {[
+//             {
+//               title: "Products",
+//               desc: "Add and update dresses",
+//               icon: "♧",
+//               path: "/admin/products",
+//               bg: "bg-[#E3ECE5]",
+//             },
+//             {
+//               title: "Categories",
+//               desc: "Organise your collection",
+//               icon: "▤",
+//               path: "/admin/category",
+//               bg: "bg-[#F4E9D5]",
+//             },
+//             {
+//               title: "Orders",
+//               desc: "Review customer orders",
+//               icon: "▣",
+//               path: "/admin/orders",
+//               bg: "bg-[#E9E6F0]",
+//             },
+//             {
+//               title: "Inventory",
+//               desc: "Check and adjust stock",
+//               icon: "⌑",
+//               path: "/admin/inventory",
+//               bg: "bg-[#F3E4E0]",
+//             },
+//           ].map((item) => (
+//             <Link
+//               key={item.title}
+//               to={item.path}
+//               className="group rounded-2xl border border-[#E7E1D5] bg-[#FFFEFA] p-5 shadow-sm transition hover:-translate-y-1 hover:border-[#B7C9BC] hover:shadow-md"
+//             >
+//               <span
+//                 className={`flex h-12 w-12 items-center justify-center rounded-xl text-xl text-[#164D3D] ${item.bg}`}
+//               >
+//                 {item.icon}
+//               </span>
+//               <h3 className="mt-4 font-serif text-lg font-bold">
+//                 {item.title}
+//               </h3>
+//               <p className="mt-1 text-sm text-[#858A80]">{item.desc}</p>
+//               <p className="mt-4 text-sm font-bold text-[#164D3D] transition group-hover:translate-x-1">
+//                 Open {item.title} →
+//               </p>
+//             </Link>
+//           ))}
+//         </div>
+//       </section>
+//     </main>
+//   );
+// }
+
+// export default AdminDashboard;
+
+
+
+
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../services/api";
+
+const API_ORIGIN = "http://localhost:5000";
+
+const CATEGORY_COLORS = [
+  "#164D3D",
+  "#71977B",
+  "#D0B477",
+  "#A8B9A8",
+  "#9C8175",
+  "#7B8EB0",
+  "#BD8C9C",
+];
 
 const money = (value) =>
   `₹${Number(value || 0).toLocaleString("en-IN", {
@@ -1428,22 +2288,13 @@ function getCustomer(order) {
     order.user?.name ||
     order.customer?.name ||
     order.shippingAddress?.fullName ||
+    order.shippingAddress?.name ||
     "Customer"
   );
 }
 
 function getOrderId(id) {
   return `#${String(id || "").slice(-6).toUpperCase()}`;
-}
-
-function formatDate(date) {
-  if (!date || Number.isNaN(new Date(date).getTime())) return "—";
-
-  return new Date(date).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
 }
 
 function getStatusStyle(status) {
@@ -1481,17 +2332,50 @@ function getItemProduct(item) {
   return {};
 }
 
-function getCategoryName(item) {
-  const product = getItemProduct(item);
-  const category = product.category;
+function getCategoryArray(data) {
+  const result = data?.data ?? data;
 
-  if (typeof category === "string") return category;
-  return category?.name || "Uncategorized";
+  if (Array.isArray(result)) return result;
+  if (Array.isArray(result?.categories)) return result.categories;
+
+  return [];
+}
+
+function getCategoryImageUrl(image) {
+  if (!image || typeof image !== "string") return "";
+
+  if (/^https?:\/\//i.test(image)) return image;
+
+  return `${API_ORIGIN}/${image.replace(/^\/+/, "")}`;
+}
+
+function getCategoryName(item, categoriesById) {
+  const product = getItemProduct(item);
+  const category = product?.category;
+
+  if (category && typeof category === "object") {
+    if (category.name) return category.name;
+
+    const id = String(category._id || category.id || "");
+    return categoriesById[id]?.name || "Uncategorized";
+  }
+
+  if (typeof category === "string" && category.trim()) {
+    const matched = categoriesById[category];
+
+    if (matched) return matched.name;
+
+    // A category name may be stored directly instead of an ID.
+    if (!/^[a-f\d]{24}$/i.test(category)) {
+      return category;
+    }
+  }
+
+  return "Uncategorized";
 }
 
 function getItemSales(item) {
   const quantity = Number(item.quantity ?? item.qty ?? 1);
-
   const product = getItemProduct(item);
 
   const variant =
@@ -1510,15 +2394,15 @@ function getItemSales(item) {
   return price * quantity;
 }
 
-const CATEGORY_COLORS = [
-  "#164D3D",
-  "#71977B",
-  "#D0B477",
-  "#A8B9A8",
-  "#9C8175",
-  "#7B8EB0",
-  "#BD8C9C",
-];
+function formatDate(date) {
+  if (!date || Number.isNaN(new Date(date).getTime())) return "—";
+
+  return new Date(date).toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
 
 function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -1530,6 +2414,8 @@ function AdminDashboard() {
   });
 
   const [allOrders, setAllOrders] = useState([]);
+  const [categories, setCategories] = useState([]);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [fromDate, setFromDate] = useState("");
@@ -1542,18 +2428,23 @@ function AdminDashboard() {
     setError("");
 
     try {
-      const [statsResult, ordersResult] = await Promise.allSettled([
-        api.get("/admin/dashboard"),
-        api.get("/admin/orders"),
-      ]);
+      const [statsResult, ordersResult, categoriesResult] =
+        await Promise.allSettled([
+          api.get("/admin/dashboard"),
+          api.get("/admin/orders"),
+          api.get("/category"),
+        ]);
 
+      // Dashboard statistics
       if (statsResult.status === "rejected") {
         const err = statsResult.reason;
 
         if (err.response?.status === 401) {
           setError("Login expired. Please login again.");
         } else if (err.response?.status === 403) {
-          setError("Admin access required. Login with an admin account.");
+          setError(
+            "Admin access required. Login with an admin account."
+          );
         } else {
           setError(
             err.response?.data?.message ||
@@ -1575,6 +2466,7 @@ function AdminDashboard() {
         lowStockItems: Number(data.lowStockItems ?? 0),
       });
 
+      // Orders
       if (ordersResult.status === "fulfilled") {
         const result = ordersResult.value.data;
 
@@ -1592,6 +2484,19 @@ function AdminDashboard() {
       } else {
         setAllOrders([]);
       }
+
+      // Categories from Category Management
+      if (categoriesResult.status === "fulfilled") {
+        setCategories(
+          getCategoryArray(categoriesResult.value.data)
+        );
+      } else {
+        setCategories([]);
+        console.error(
+          "Unable to load categories:",
+          categoriesResult.reason
+        );
+      }
     } catch (err) {
       console.error("Dashboard error:", err);
       setError("Something went wrong while loading dashboard.");
@@ -1604,6 +2509,20 @@ function AdminDashboard() {
     loadDashboard();
   }, [loadDashboard]);
 
+  // Map Category.jsx category IDs to their complete details.
+  const categoriesById = useMemo(() => {
+    const map = {};
+
+    categories.forEach((category) => {
+      if (category?._id) {
+        map[String(category._id)] = category;
+      }
+    });
+
+    return map;
+  }, [categories]);
+
+  // Filter orders by selected date range.
   const filteredOrders = useMemo(() => {
     return allOrders.filter((order) => {
       if (!order.createdAt) return false;
@@ -1637,6 +2556,7 @@ function AdminDashboard() {
     (order) => (order.status || "").toLowerCase() === "cancelled"
   ).length;
 
+  // Recent orders
   const recentOrders = useMemo(() => {
     return [...allOrders]
       .sort(
@@ -1647,10 +2567,11 @@ function AdminDashboard() {
       .slice(0, 5);
   }, [allOrders]);
 
-  // Weekly, daily or monthly sales graph.
+  // Sales chart: last 7 days, last 30 days or current year.
   const chartData = useMemo(() => {
     const now = new Date();
-    const count = chartPeriod === "Week" ? 7 : chartPeriod === "Month" ? 30 : 12;
+    const count =
+      chartPeriod === "Week" ? 7 : chartPeriod === "Month" ? 30 : 12;
 
     return Array.from({ length: count }, (_, index) => {
       let start;
@@ -1708,9 +2629,12 @@ function AdminDashboard() {
     });
   }, [allOrders, chartPeriod]);
 
-  const chartMax = Math.max(...chartData.map((item) => item.sales), 1);
+  const chartMax = Math.max(
+    ...chartData.map((item) => item.sales),
+    1
+  );
 
-  // Category-wise revenue from order item records.
+  // Category-wise revenue using Category.jsx data and category IDs.
   const categorySales = useMemo(() => {
     const totals = {};
 
@@ -1720,19 +2644,31 @@ function AdminDashboard() {
       }
 
       getOrderItems(order).forEach((item) => {
-        const category = getCategoryName(item);
+        const name = getCategoryName(item, categoriesById);
         const amount = getItemSales(item);
 
         if (amount > 0) {
-          totals[category] = (totals[category] || 0) + amount;
+          totals[name] = (totals[name] || 0) + amount;
         }
       });
     });
 
     return Object.entries(totals)
-      .map(([name, sales]) => ({ name, sales }))
+      .map(([name, sales]) => {
+        const categoryDetails = categories.find(
+          (category) =>
+            String(category.name || "").trim().toLowerCase() ===
+            name.trim().toLowerCase()
+        );
+
+        return {
+          name,
+          sales,
+          categoryDetails: categoryDetails || null,
+        };
+      })
       .sort((a, b) => b.sales - a.sales);
-  }, [filteredOrders]);
+  }, [filteredOrders, categories, categoriesById]);
 
   const categoryTotal = categorySales.reduce(
     (sum, item) => sum + item.sales,
@@ -1748,7 +2684,9 @@ function AdminDashboard() {
       const start = current;
       current += (item.sales / categoryTotal) * 100;
 
-      return `${CATEGORY_COLORS[index % CATEGORY_COLORS.length]} ${start}% ${current}%`;
+      return `${
+        CATEGORY_COLORS[index % CATEGORY_COLORS.length]
+      } ${start}% ${current}%`;
     });
 
     return `conic-gradient(${segments.join(", ")})`;
@@ -1805,11 +2743,13 @@ function AdminDashboard() {
       <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <p className="text-[10px] font-bold tracking-[0.24em] text-[#7C897E]">
-            DRESS SHOP / STORE ANALYTICS
+            MODEZA / STORE ANALYTICS
           </p>
+
           <h1 className="mt-2 font-serif text-3xl font-bold sm:text-4xl">
             Dashboard Overview
           </h1>
+
           <p className="mt-2 text-sm text-[#788078]">
             Welcome back! Here&apos;s what&apos;s happening in your store.
           </p>
@@ -1835,6 +2775,7 @@ function AdminDashboard() {
             <p className="font-bold text-rose-800">Dashboard error</p>
             <p className="mt-1 text-sm text-rose-700">{error}</p>
           </div>
+
           <button
             type="button"
             onClick={loadDashboard}
@@ -1856,21 +2797,26 @@ function AdminDashboard() {
               <p className="text-sm font-medium text-[#758078]">
                 {card.label}
               </p>
+
               <span
                 className={`flex h-11 w-11 items-center justify-center rounded-xl text-xl font-bold text-[#164D3D] ${card.bg}`}
               >
                 {card.icon}
               </span>
             </div>
+
             <p className="mt-5 break-words text-2xl font-bold sm:text-3xl">
               {loading ? "—" : card.value}
             </p>
-            <p className="mt-2 text-xs text-[#899087]">{card.note}</p>
+
+            <p className="mt-2 text-xs text-[#899087]">
+              {card.note}
+            </p>
           </article>
         ))}
       </section>
 
-      {/* Sales graph */}
+      {/* Sales graph and inventory */}
       <section className="grid grid-cols-1 gap-5 xl:grid-cols-[1.65fr_1fr]">
         <article className="min-w-0 rounded-2xl border border-[#E7E1D5] bg-[#FFFEFA] p-5 shadow-sm sm:p-6">
           <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
@@ -1878,9 +2824,11 @@ function AdminDashboard() {
               <p className="text-[10px] font-bold tracking-[0.2em] text-[#8A8B7C]">
                 PERFORMANCE
               </p>
+
               <h2 className="mt-2 font-serif text-xl font-bold">
                 Sales Performance
               </h2>
+
               <p className="mt-1 text-xs text-[#858A80]">
                 Sales from available order records
               </p>
@@ -1942,12 +2890,16 @@ function AdminDashboard() {
                       style={{
                         height: `${
                           item.sales > 0
-                            ? Math.max(5, (item.sales / chartMax) * 100)
+                            ? Math.max(
+                                5,
+                                (item.sales / chartMax) * 100
+                              )
                             : 2
                         }%`,
                       }}
                     />
                   </div>
+
                   <span className="absolute bottom-0 text-[10px] text-[#858A80]">
                     {item.label}
                   </span>
@@ -1970,9 +2922,11 @@ function AdminDashboard() {
           <p className="text-[10px] font-bold tracking-[0.2em] text-[#8A8B7C]">
             STOCK MANAGEMENT
           </p>
+
           <h2 className="mt-2 font-serif text-xl font-bold">
             Inventory Overview
           </h2>
+
           <p className="mt-1 text-sm text-[#858A80]">
             Keep your collection ready for customers.
           </p>
@@ -1981,14 +2935,17 @@ function AdminDashboard() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm text-[#737D72]">Low Stock Items</p>
+
                 <p className="mt-2 text-4xl font-bold">
                   {loading ? "—" : stats.lowStockItems}
                 </p>
               </div>
+
               <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#E9DFC8] text-2xl text-[#82683B]">
                 !
               </span>
             </div>
+
             <p className="mt-4 text-xs leading-5 text-[#858A80]">
               Check stock levels and update quantities before items run out.
             </p>
@@ -2003,28 +2960,31 @@ function AdminDashboard() {
         </article>
       </section>
 
-      {/* Category donut wheel */}
+      {/* Category sales donut wheel */}
       <section className="rounded-2xl border border-[#E7E1D5] bg-[#FFFEFA] p-5 shadow-sm sm:p-6">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
           <div>
             <p className="text-[10px] font-bold tracking-[0.2em] text-[#8A8B7C]">
               CATEGORY ANALYTICS
             </p>
+
             <h2 className="mt-2 font-serif text-xl font-bold">
               Sales by Category
             </h2>
+
             <p className="mt-1 text-sm text-[#858A80]">
-              Revenue distribution across categories
+              Revenue distribution using your saved categories
             </p>
           </div>
 
           <span className="rounded-xl bg-[#E3ECE5] px-4 py-2 text-sm font-semibold text-[#164D3D]">
-            {categorySales.length} Categories
+            {categorySales.length} Categories with Sales
           </span>
         </div>
 
         {categoryTotal > 0 ? (
           <div className="mt-7 grid grid-cols-1 items-center gap-8 md:grid-cols-2">
+            {/* Donut */}
             <div className="flex justify-center">
               <div
                 className="relative flex h-56 w-56 items-center justify-center rounded-full"
@@ -2036,6 +2996,7 @@ function AdminDashboard() {
                   <span className="text-xs text-[#858A80]">
                     Total Sales
                   </span>
+
                   <span className="mt-2 max-w-full break-words px-2 text-center text-xl font-bold text-[#164D3D]">
                     {money(categoryTotal)}
                   </span>
@@ -2043,11 +3004,18 @@ function AdminDashboard() {
               </div>
             </div>
 
+            {/* Category details from Category.jsx */}
             <div className="space-y-5">
               {categorySales.map((item, index) => {
-                const percentage = (item.sales / categoryTotal) * 100;
+                const percentage =
+                  (item.sales / categoryTotal) * 100;
+
                 const color =
                   CATEGORY_COLORS[index % CATEGORY_COLORS.length];
+
+                const category = item.categoryDetails;
+
+                const imageUrl = getCategoryImageUrl(category?.image);
 
                 return (
                   <div key={item.name}>
@@ -2057,25 +3025,57 @@ function AdminDashboard() {
                           className="h-3 w-3 shrink-0 rounded-sm"
                           style={{ backgroundColor: color }}
                         />
-                        <span className="truncate text-sm font-semibold text-[#173D32]">
-                          {item.name}
-                        </span>
+
+                        {imageUrl ? (
+                          <img
+                            src={imageUrl}
+                            alt={item.name}
+                            className="h-10 w-10 shrink-0 rounded-full border border-[#E7E1D5] object-cover"
+                            onError={(event) => {
+                              event.currentTarget.style.display = "none";
+                            }}
+                          />
+                        ) : (
+                          <span
+                            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#E3ECE5] text-sm font-bold text-[#164D3D]"
+                            aria-hidden="true"
+                          >
+                            {item.name.charAt(0).toUpperCase()}
+                          </span>
+                        )}
+
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-[#173D32]">
+                            {item.name}
+                          </p>
+
+                          {category?.description && (
+                            <p
+                              className="mt-1 truncate text-xs text-[#858A80]"
+                              title={category.description}
+                            >
+                              {category.description}
+                            </p>
+                          )}
+                        </div>
                       </div>
+
                       <span className="shrink-0 text-sm font-bold text-[#164D3D]">
                         {percentage.toFixed(1)}%
                       </span>
                     </div>
 
-                    <div className="ml-6 mt-2 flex items-center justify-between gap-3">
+                    <div className="ml-[4.25rem] mt-2 flex items-center justify-between gap-3">
                       <span className="text-xs text-[#858A80]">
                         {money(item.sales)}
                       </span>
+
                       <span className="text-xs text-[#858A80]">
-                        Sales
+                        Revenue
                       </span>
                     </div>
 
-                    <div className="ml-6 mt-2 h-1.5 overflow-hidden rounded-full bg-[#EAE8DF]">
+                    <div className="ml-[4.25rem] mt-2 h-1.5 overflow-hidden rounded-full bg-[#EAE8DF]">
                       <div
                         className="h-full rounded-full transition-all duration-500"
                         style={{
@@ -2094,27 +3094,58 @@ function AdminDashboard() {
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#E3ECE5] text-2xl text-[#164D3D]">
               ◉
             </div>
+
             <h3 className="mt-4 font-semibold text-[#173D32]">
               No category sales available
             </h3>
+
             <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#858A80]">
-              Order items-il product category, quantity, price details
-              populate cheythittundenkil category chart display cheyyum.
+              Category names, images and descriptions are loaded from
+              Category Management. To calculate the wheel, order items
+              must also contain their product category and item price.
             </p>
+
+            {categories.length > 0 && (
+              <div className="mx-auto mt-5 flex max-w-xl flex-wrap justify-center gap-2">
+                {categories.map((category) => (
+                  <span
+                    key={category._id}
+                    className="inline-flex items-center gap-2 rounded-full border border-[#E7E1D5] bg-[#FFFEFA] px-3 py-2 text-xs font-medium text-[#526257]"
+                  >
+                    {getCategoryImageUrl(category.image) ? (
+                      <img
+                        src={getCategoryImageUrl(category.image)}
+                        alt=""
+                        className="h-6 w-6 rounded-full object-cover"
+                      />
+                    ) : (
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#E3ECE5] text-[#164D3D]">
+                        {String(category.name || "?").charAt(0)}
+                      </span>
+                    )}
+
+                    {category.name}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </section>
 
-     
       {/* Recent orders */}
       <section className="overflow-hidden rounded-2xl border border-[#E7E1D5] bg-[#FFFEFA] shadow-sm">
         <div className="flex flex-col justify-between gap-3 border-b border-[#E7E1D5] p-5 sm:flex-row sm:items-center sm:p-6">
           <div>
-            <h2 className="font-serif text-xl font-bold">Recent Orders</h2>
+            <h2 className="font-serif text-xl font-bold">
+              Recent Orders
+            </h2>
+
             <p className="mt-1 text-sm text-[#858A80]">
               Latest orders received by your store.
             </p>
           </div>
+
           <Link
             to="/admin/orders"
             className="text-sm font-bold text-[#164D3D] hover:underline"
@@ -2127,20 +3158,26 @@ function AdminDashboard() {
           <table className="w-full min-w-[560px] text-left">
             <thead className="bg-[#F3F0E7]">
               <tr>
-                {["Order ID", "Customer", "Amount", "Status"].map((heading) => (
-                  <th
-                    key={heading}
-                    className="px-5 py-4 text-xs font-bold uppercase tracking-wider text-[#758078]"
-                  >
-                    {heading}
-                  </th>
-                ))}
+                {["Order ID", "Customer", "Amount", "Status"].map(
+                  (heading) => (
+                    <th
+                      key={heading}
+                      className="px-5 py-4 text-xs font-bold uppercase tracking-wider text-[#758078]"
+                    >
+                      {heading}
+                    </th>
+                  )
+                )}
               </tr>
             </thead>
+
             <tbody className="divide-y divide-[#EEE9DF]">
               {loading ? (
                 <tr>
-                  <td colSpan={4} className="px-5 py-10 text-center text-sm">
+                  <td
+                    colSpan={4}
+                    className="px-5 py-10 text-center text-sm"
+                  >
                     Loading orders...
                   </td>
                 </tr>
@@ -2155,16 +3192,22 @@ function AdminDashboard() {
                 </tr>
               ) : (
                 recentOrders.map((order) => (
-                  <tr key={order._id} className="hover:bg-[#FAF8F0]">
+                  <tr
+                    key={order._id}
+                    className="hover:bg-[#FAF8F0]"
+                  >
                     <td className="px-5 py-4 text-sm font-bold text-[#164D3D]">
                       {getOrderId(order._id)}
                     </td>
+
                     <td className="px-5 py-4 text-sm font-medium">
                       {getCustomer(order)}
                     </td>
+
                     <td className="whitespace-nowrap px-5 py-4 text-sm font-semibold">
                       {money(getAmount(order))}
                     </td>
+
                     <td className="px-5 py-4">
                       <span
                         className={`inline-flex rounded-full px-3 py-1.5 text-xs font-semibold ${getStatusStyle(order.status)}`}
@@ -2186,9 +3229,11 @@ function AdminDashboard() {
           <p className="text-[10px] font-bold tracking-[0.2em] text-[#8A8B7C]">
             STORE SHORTCUTS
           </p>
+
           <h2 className="mt-2 font-serif text-2xl font-bold">
             Quick Management
           </h2>
+
           <p className="mt-1 text-sm text-[#858A80]">
             Access your main store management pages.
           </p>
@@ -2198,7 +3243,7 @@ function AdminDashboard() {
           {[
             {
               title: "Products",
-              desc: "Add and update dresses",
+              desc: "Add and update products",
               icon: "♧",
               path: "/admin/products",
               bg: "bg-[#E3ECE5]",
@@ -2235,10 +3280,15 @@ function AdminDashboard() {
               >
                 {item.icon}
               </span>
+
               <h3 className="mt-4 font-serif text-lg font-bold">
                 {item.title}
               </h3>
-              <p className="mt-1 text-sm text-[#858A80]">{item.desc}</p>
+
+              <p className="mt-1 text-sm text-[#858A80]">
+                {item.desc}
+              </p>
+
               <p className="mt-4 text-sm font-bold text-[#164D3D] transition group-hover:translate-x-1">
                 Open {item.title} →
               </p>
