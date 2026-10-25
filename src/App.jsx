@@ -1,5 +1,4 @@
 
-
 import { Routes, Route, useLocation } from "react-router-dom";
 
 // Website pages
@@ -13,7 +12,8 @@ import Checkout from "./website/pages/Checkout";
 import Orders from "./website/pages/Orders";
 import Profile from "./website/pages/Profile";
 import OrderDetails from "./website/pages/OrderDetails";
-
+import Collections from "./website/pages/Collections";
+import Wishlist from "./website/pages/Wishlist";
 
 // Website components
 import Navbar from "./website/components/Navbar";
@@ -30,46 +30,126 @@ import AdminOrders from "./Dashboard/pages/AdminOrders";
 import Inventory from "./Dashboard/pages/Inventory";
 import AdminProductVariants from "./Dashboard/pages/AdminProductVariants";
 import AdminReports from "./Dashboard/pages/AdminReports";
-import Collections from "./website/pages/Collections";
 
 function App() {
   const location = useLocation();
+
   const isAdminRoute = location.pathname.startsWith("/admin");
 
   return (
     <>
+      {/* Customer Navbar */}
       {!isAdminRoute && <Navbar />}
 
       <Routes>
         {/* Customer Website */}
         <Route path="/" element={<Home />} />
+
         <Route path="/products" element={<Products />} />
-        <Route path="/products/:id" element={<ProductDetails />} />
-        <Route path="/collections" element={<Collections />} />
-        <Route path="/cart" element={<Cart />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/checkout" element={<Checkout />} />
-        <Route path="/orders" element={<Orders />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/orders/:id" element={<OrderDetails />} />
-        <Route path="/collections" element={<Collections />} />
+
+        <Route
+          path="/products/:id"
+          element={<ProductDetails />}
+        />
+
+        <Route
+          path="/collections"
+          element={<Collections />}
+        />
+
+        <Route
+          path="/cart"
+          element={<Cart />}
+        />
+
+        {/* Wishlist Page */}
+        <Route
+          path="/wishlist"
+          element={<Wishlist />}
+        />
+
+        <Route
+          path="/login"
+          element={<Login />}
+        />
+
+        <Route
+          path="/register"
+          element={<Register />}
+        />
+
+        <Route
+          path="/checkout"
+          element={<Checkout />}
+        />
+
+        <Route
+          path="/orders"
+          element={<Orders />}
+        />
+
+        <Route
+          path="/orders/:id"
+          element={<OrderDetails />}
+        />
+
+        <Route
+          path="/profile"
+          element={<Profile />}
+        />
 
         {/* Admin Dashboard */}
         <Route path="/admin" element={<DashboardLayout />}>
           <Route index element={<AdminDashboard />} />
-          <Route path="dashboard" element={<AdminDashboard />} />
-          <Route path="customers" element={<AdminCustomers />} />
-          <Route path="products" element={<AdminProduct />} />
-          <Route path="orders" element={<AdminOrders />} />
-          <Route path="orders/:id" element={<AdminOrderDetails />} />
-          <Route path="inventory" element={<Inventory />} />
-          <Route path="category" element={<AdminCategories />} />
-          <Route path="variants" element={<AdminProductVariants />} />
-          <Route path="reports" element={<AdminReports />} />
+
+          <Route
+            path="dashboard"
+            element={<AdminDashboard />}
+          />
+
+          <Route
+            path="customers"
+            element={<AdminCustomers />}
+          />
+
+          <Route
+            path="products"
+            element={<AdminProduct />}
+          />
+
+          <Route
+            path="orders"
+            element={<AdminOrders />}
+          />
+
+          <Route
+            path="orders/:id"
+            element={<AdminOrderDetails />}
+          />
+
+          <Route
+            path="inventory"
+            element={<Inventory />}
+          />
+
+          <Route
+            path="category"
+            element={<AdminCategories />}
+          />
+
+          <Route
+            path="variants"
+            element={<AdminProductVariants />}
+          />
+
+          <Route
+            path="reports"
+            element={<AdminReports />}
+          />
         </Route>
       </Routes>
 
+      {/* Customer Footer */}
       {!isAdminRoute && <Footer />}
     </>
   );

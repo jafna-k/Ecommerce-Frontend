@@ -13,12 +13,48 @@ const EMPTY_ADDRESS = {
 };
 
 const fields = [
-  { name: "name", label: "Full Name", type: "text", placeholder: "Enter your full name", autoComplete: "name" },
-  { name: "phone", label: "Phone Number", type: "tel", placeholder: "Enter phone number", autoComplete: "tel" },
-  { name: "address", label: "House / Street Address", type: "text", placeholder: "Enter your complete address", autoComplete: "street-address" },
-  { name: "city", label: "City", type: "text", placeholder: "Enter your city", autoComplete: "address-level2" },
-  { name: "state", label: "State", type: "text", placeholder: "Enter your state", autoComplete: "address-level1" },
-  { name: "pincode", label: "PIN Code", type: "text", placeholder: "6-digit PIN code", autoComplete: "postal-code" },
+  {
+    name: "name",
+    label: "Full Name",
+    type: "text",
+    placeholder: "Enter your full name",
+    autoComplete: "name",
+  },
+  {
+    name: "phone",
+    label: "Phone Number",
+    type: "tel",
+    placeholder: "Enter phone number",
+    autoComplete: "tel",
+  },
+  {
+    name: "address",
+    label: "House / Street Address",
+    type: "text",
+    placeholder: "Enter your complete address",
+    autoComplete: "street-address",
+  },
+  {
+    name: "city",
+    label: "City",
+    type: "text",
+    placeholder: "Enter your city",
+    autoComplete: "address-level2",
+  },
+  {
+    name: "state",
+    label: "State",
+    type: "text",
+    placeholder: "Enter your state",
+    autoComplete: "address-level1",
+  },
+  {
+    name: "pincode",
+    label: "PIN Code",
+    type: "text",
+    placeholder: "6-digit PIN code",
+    autoComplete: "postal-code",
+  },
 ];
 
 function Checkout() {
@@ -29,10 +65,12 @@ function Checkout() {
   const [addressId, setAddressId] = useState(null);
   const [addressLoading, setAddressLoading] = useState(true);
   const [editingAddress, setEditingAddress] = useState(false);
+
   const [paymentMethod, setPaymentMethod] = useState("COD");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -40,6 +78,7 @@ function Checkout() {
     const loadAddress = async () => {
       try {
         const response = await api.get("/address");
+
         const addresses = Array.isArray(response.data)
           ? response.data
           : [];
@@ -70,7 +109,9 @@ function Checkout() {
           );
         }
       } finally {
-        if (active) setAddressLoading(false);
+        if (active) {
+          setAddressLoading(false);
+        }
       }
     };
 
@@ -80,15 +121,6 @@ function Checkout() {
       active = false;
     };
   }, []);
-
-  // Click any saved field to enable editing.
-  const handleFieldFocus = () => {
-    if (addressId && !editingAddress) {
-      setEditingAddress(true);
-      setError("");
-      setSuccess("");
-    }
-  };
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -103,7 +135,9 @@ function Checkout() {
   };
 
   const validateAddress = () => {
-    if (!address.name.trim()) return "Please enter your full name.";
+    if (!address.name.trim()) {
+      return "Please enter your full name.";
+    }
 
     if (!/^[0-9+() -]{7,20}$/.test(address.phone.trim())) {
       return "Please enter a valid phone number.";
@@ -113,8 +147,13 @@ function Checkout() {
       return "Please enter your delivery address.";
     }
 
-    if (!address.city.trim()) return "Please enter your city.";
-    if (!address.state.trim()) return "Please enter your state.";
+    if (!address.city.trim()) {
+      return "Please enter your city.";
+    }
+
+    if (!address.state.trim()) {
+      return "Please enter your state.";
+    }
 
     if (!/^[0-9]{6}$/.test(address.pincode.trim())) {
       return "Please enter a valid 6-digit PIN code.";
@@ -123,7 +162,7 @@ function Checkout() {
     return "";
   };
 
-  // Save customer details independently.
+  // Save customer details
   const handleSaveAddress = async () => {
     const validationError = validateAddress();
 
@@ -137,22 +176,21 @@ function Checkout() {
       setError("");
       setSuccess("");
 
-      let saved;
+      let response;
 
       if (addressId) {
-        const response = await api.put(
-          `/address/${addressId}`,
-          address
-        );
-        saved = response.data;
+        response = await api.put(`/address/${addressId}`, address);
       } else {
-        const response = await api.post("/address", address);
-        saved = response.data;
+        response = await api.post("/address", address);
+      }
 
-        if (!saved?._id) {
-          throw new Error("Address could not be saved.");
-        }
+      const saved = response.data;
 
+      if (!addressId && !saved?._id) {
+        throw new Error("Address could not be saved.");
+      }
+
+      if (saved?._id) {
         setAddressId(saved._id);
       }
 
@@ -180,6 +218,7 @@ function Checkout() {
     }
   };
 
+  // Cancel address editing
   const handleCancelEditing = () => {
     setAddress(originalAddress);
     setEditingAddress(false);
@@ -187,13 +226,17 @@ function Checkout() {
     setSuccess("");
   };
 
+  // Place order
   const handlePlaceOrder = async (event) => {
     event.preventDefault();
+
     setError("");
     setSuccess("");
 
     if (editingAddress) {
-      setError("Please save or cancel your changes before placing the order.");
+      setError(
+        "Please save or cancel your changes before placing the order."
+      );
       return;
     }
 
@@ -206,7 +249,7 @@ function Checkout() {
 
     if (paymentMethod === "ONLINE") {
       setError(
-        "Online payment gateway is not configured yet. Please select Cash on Delivery."
+        "Online payment is not configured yet. Please select Cash on Delivery."
       );
       return;
     }
@@ -214,7 +257,7 @@ function Checkout() {
     try {
       setLoading(true);
 
-      // Save the address first if this is the customer's first checkout.
+      // Save address before creating order
       if (!addressId) {
         const response = await api.post("/address", address);
 
@@ -225,18 +268,18 @@ function Checkout() {
         setAddressId(response.data._id);
         setOriginalAddress(address);
       } else {
-        // Ensure the latest details are saved before creating the order.
         await api.put(`/address/${addressId}`, address);
         setOriginalAddress(address);
       }
 
+      // Create order
       await api.post("/order", {
         shippingAddress: address,
         paymentMethod,
       });
 
-      alert("Order placed successfully!");
-      navigate("/orders");
+      // Show success modal instead of browser alert
+      setShowSuccessModal(true);
     } catch (err) {
       console.error("Checkout error:", err);
 
@@ -253,6 +296,7 @@ function Checkout() {
   return (
     <main className="min-h-screen bg-[#faf7f0] px-4 py-10 text-[#263a30] sm:px-6 sm:py-14 lg:px-8">
       <div className="mx-auto max-w-6xl">
+        {/* Page Header */}
         <header className="mb-10">
           <div className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-[#8b806f]">
             <span className="h-px w-8 bg-[#b8a88d]" />
@@ -265,7 +309,8 @@ function Checkout() {
           </h1>
 
           <p className="mt-4 max-w-xl text-sm leading-7 text-[#77796e] sm:text-base">
-            A few final details, and your favourite pieces will be on their way to you.
+            A few final details, and your favourite pieces will be on their
+            way to you.
           </p>
 
           <div className="mt-7 flex flex-wrap items-center gap-3 text-xs font-medium text-[#68756a]">
@@ -284,19 +329,23 @@ function Checkout() {
         </header>
 
         <div className="grid grid-cols-1 items-start gap-7 lg:grid-cols-[minmax(0,1fr)_340px]">
+          {/* Main Checkout Card */}
           <section className="overflow-hidden rounded-3xl border border-[#e8dfd2] bg-[#fffdf9] shadow-[0_12px_45px_rgba(40,55,42,0.045)]">
             <div className="border-b border-[#eee7db] px-5 py-6 sm:px-8 sm:py-7">
               <div className="flex items-center gap-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eaf0e9] text-xl text-[#164d3d]">
                   ⌂
                 </div>
+
                 <div>
                   <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-[#a08e70]">
                     Step 01
                   </p>
+
                   <h2 className="font-serif text-2xl font-medium text-[#123f32] sm:text-3xl">
                     Delivery details
                   </h2>
+
                   <p className="mt-1 text-sm text-[#888679]">
                     Click any detail to edit it.
                   </p>
@@ -305,14 +354,22 @@ function Checkout() {
             </div>
 
             <form onSubmit={handlePlaceOrder} className="p-5 sm:p-8">
+              {/* Error Message */}
               {error && (
-                <div role="alert" className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <div
+                  role="alert"
+                  className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+                >
                   {error}
                 </div>
               )}
 
+              {/* Saved Message */}
               {success && (
-                <div role="status" className="mb-5 rounded-xl border border-[#dce7da] bg-[#f1f5ed] px-4 py-3 text-sm text-[#164d3d]">
+                <div
+                  role="status"
+                  className="mb-5 rounded-xl border border-[#dce7da] bg-[#f1f5ed] px-4 py-3 text-sm text-[#164d3d]"
+                >
                   {success}
                 </div>
               )}
@@ -328,6 +385,7 @@ function Checkout() {
                   <p className="text-sm font-semibold text-[#164d3d]">
                     ✓ Saved customer details
                   </p>
+
                   <p className="mt-1 text-xs leading-5 text-[#68756a]">
                     {editingAddress
                       ? "Edit any field and select Save Changes."
@@ -340,9 +398,13 @@ function Checkout() {
                 <h3 className="text-sm font-bold text-[#314438]">
                   Personal & delivery information
                 </h3>
-                <span className="text-xs text-[#9a9385]">* Required</span>
+
+                <span className="text-xs text-[#9a9385]">
+                  * Required
+                </span>
               </div>
 
+              {/* Address Fields */}
               <fieldset
                 disabled={addressLoading || loading}
                 className="grid grid-cols-1 gap-x-5 gap-y-5 sm:grid-cols-2"
@@ -350,7 +412,9 @@ function Checkout() {
                 {fields.map((field) => (
                   <div
                     key={field.name}
-                    className={field.name === "address" ? "sm:col-span-2" : ""}
+                    className={
+                      field.name === "address" ? "sm:col-span-2" : ""
+                    }
                   >
                     <label
                       htmlFor={field.name}
@@ -403,6 +467,7 @@ function Checkout() {
                 ))}
               </fieldset>
 
+              {/* Save / Cancel Address */}
               {editingAddress && (
                 <div className="mt-6 flex flex-wrap gap-3">
                   <button
@@ -427,15 +492,18 @@ function Checkout() {
                 </div>
               )}
 
+              {/* Payment Section */}
               <div className="mt-9 border-t border-[#eee7db] pt-8">
                 <div className="flex items-center gap-4">
                   <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#eaf0e9] text-lg text-[#164d3d]">
                     ▤
                   </div>
+
                   <div>
                     <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-[#a08e70]">
                       Step 02
                     </p>
+
                     <h2 className="font-serif text-2xl font-medium text-[#123f32] sm:text-3xl">
                       Payment method
                     </h2>
@@ -447,7 +515,14 @@ function Checkout() {
                 </p>
 
                 <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <label className={`flex cursor-pointer gap-3 rounded-2xl border p-5 transition ${paymentMethod === "COD" ? "border-[#164d3d] bg-[#f1f4ed] ring-1 ring-[#164d3d]" : "border-[#e8dfd2] bg-[#fffdf9] hover:border-[#a9b9aa]"}`}>
+                  {/* COD */}
+                  <label
+                    className={`flex cursor-pointer gap-3 rounded-2xl border p-5 transition ${
+                      paymentMethod === "COD"
+                        ? "border-[#164d3d] bg-[#f1f4ed] ring-1 ring-[#164d3d]"
+                        : "border-[#e8dfd2] bg-[#fffdf9] hover:border-[#a9b9aa]"
+                    }`}
+                  >
                     <input
                       type="radio"
                       name="paymentMethod"
@@ -456,15 +531,26 @@ function Checkout() {
                       onChange={(e) => setPaymentMethod(e.target.value)}
                       className="mt-1 h-4 w-4 accent-[#164d3d]"
                     />
+
                     <span>
-                      <span className="font-semibold text-[#123f32]">Cash on Delivery</span>
+                      <span className="font-semibold text-[#123f32]">
+                        Cash on Delivery
+                      </span>
+
                       <span className="mt-2 block text-xs leading-5 text-[#7b8075]">
                         Pay when your order arrives.
                       </span>
                     </span>
                   </label>
 
-                  <label className={`flex cursor-pointer gap-3 rounded-2xl border p-5 transition ${paymentMethod === "ONLINE" ? "border-[#164d3d] bg-[#f1f4ed] ring-1 ring-[#164d3d]" : "border-[#e8dfd2] bg-[#fffdf9] hover:border-[#a9b9aa]"}`}>
+                  {/* Online Payment */}
+                  <label
+                    className={`flex cursor-pointer gap-3 rounded-2xl border p-5 transition ${
+                      paymentMethod === "ONLINE"
+                        ? "border-[#164d3d] bg-[#f1f4ed] ring-1 ring-[#164d3d]"
+                        : "border-[#e8dfd2] bg-[#fffdf9] hover:border-[#a9b9aa]"
+                    }`}
+                  >
                     <input
                       type="radio"
                       name="paymentMethod"
@@ -473,8 +559,12 @@ function Checkout() {
                       onChange={(e) => setPaymentMethod(e.target.value)}
                       className="mt-1 h-4 w-4 accent-[#164d3d]"
                     />
+
                     <span>
-                      <span className="font-semibold text-[#123f32]">Online Payment</span>
+                      <span className="font-semibold text-[#123f32]">
+                        Online Payment
+                      </span>
+
                       <span className="mt-2 block text-xs leading-5 text-[#7b8075]">
                         Digital payment through a configured gateway.
                       </span>
@@ -484,11 +574,13 @@ function Checkout() {
 
                 {paymentMethod === "ONLINE" && (
                   <p className="mt-4 rounded-xl border border-[#eadcc2] bg-[#faf4e8] p-4 text-xs leading-5 text-[#796c55]">
-                    Online payment gateway must be configured before online payments can be processed.
+                    Online payment gateway must be configured before online
+                    payments can be processed.
                   </p>
                 )}
               </div>
 
+              {/* Bottom Actions */}
               <div className="mt-9 flex flex-col-reverse gap-3 border-t border-[#eee7db] pt-6 sm:flex-row sm:items-center sm:justify-between">
                 <Link
                   to="/cart"
@@ -499,7 +591,11 @@ function Checkout() {
 
                 <button
                   type="submit"
-                  disabled={loading || addressLoading || editingAddress}
+                  disabled={
+                    loading ||
+                    addressLoading ||
+                    editingAddress
+                  }
                   className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#164d3d] px-7 py-3 text-sm font-semibold text-white shadow-[0_5px_14px_rgba(18,63,50,0.16)] transition hover:bg-[#10392d] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {loading ? "Processing..." : "Place order →"}
@@ -508,6 +604,7 @@ function Checkout() {
             </form>
           </section>
 
+          {/* Right Sidebar */}
           <aside className="lg:sticky lg:top-6">
             <div className="overflow-hidden rounded-3xl bg-[#123f32] text-white shadow-[0_16px_40px_rgba(18,63,50,0.14)]">
               <div className="p-6 sm:p-7">
@@ -515,6 +612,7 @@ function Checkout() {
                   <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#d1c4a8]">
                     MODEZA
                   </span>
+
                   <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/5 text-lg text-[#d6c6a4]">
                     ♡
                   </span>
@@ -532,17 +630,38 @@ function Checkout() {
 
                 <div className="mt-7 space-y-5 border-t border-white/15 pt-5">
                   {[
-                    ["1", "Delivery details", "Review your saved address."],
-                    ["2", "Payment preference", "Choose your payment method."],
-                    ["3", "Order confirmation", "Review your order after submission."],
+                    [
+                      "1",
+                      "Delivery details",
+                      "Review your saved address.",
+                    ],
+                    [
+                      "2",
+                      "Payment preference",
+                      "Choose your payment method.",
+                    ],
+                    [
+                      "3",
+                      "Order confirmation",
+                      "Review your order after submission.",
+                    ],
                   ].map(([number, title, description]) => (
-                    <div key={number} className="flex items-start gap-3">
+                    <div
+                      key={number}
+                      className="flex items-start gap-3"
+                    >
                       <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-sm text-[#e1d2b2]">
                         {number}
                       </span>
+
                       <div>
-                        <p className="text-sm font-semibold text-white">{title}</p>
-                        <p className="mt-1 text-xs leading-5 text-[#c5d2c7]">{description}</p>
+                        <p className="text-sm font-semibold text-white">
+                          {title}
+                        </p>
+
+                        <p className="mt-1 text-xs leading-5 text-[#c5d2c7]">
+                          {description}
+                        </p>
                       </div>
                     </div>
                   ))}
@@ -557,10 +676,14 @@ function Checkout() {
             </div>
 
             <div className="mt-5 rounded-2xl border border-[#e8dfd2] bg-[#fffdf9] p-5">
-              <p className="text-sm font-bold text-[#123f32]">Need to change something?</p>
+              <p className="text-sm font-bold text-[#123f32]">
+                Need to change something?
+              </p>
+
               <p className="mt-2 text-xs leading-5 text-[#858477]">
                 Return to your cart to review your order items.
               </p>
+
               <Link
                 to="/cart"
                 className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#164d3d] transition hover:text-[#9a8055]"
@@ -575,6 +698,96 @@ function Checkout() {
           </aside>
         </div>
       </div>
+
+      {/* ==============================
+          ORDER SUCCESS MODAL
+      ============================== */}
+      {showSuccessModal && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-[#10251c]/60 px-4 py-6 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="order-success-title"
+        >
+          <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-[#e8dfd2] bg-[#fffdf9] p-7 text-center shadow-2xl sm:p-9">
+
+            {/* Success Icon */}
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-[#dce7da] bg-[#edf3eb]">
+              <svg
+                className="h-10 w-10 text-[#164d3d]"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="m5 12 4 4L19 6" />
+              </svg>
+            </div>
+
+            {/* Brand */}
+            <p className="mt-6 text-xs font-bold uppercase tracking-[0.25em] text-[#a08e70]">
+              MODEZA
+            </p>
+
+            <h2
+              id="order-success-title"
+              className="mt-3 font-serif text-3xl font-medium text-[#123f32] sm:text-4xl"
+            >
+              Order placed!
+              <span className="text-[#b19a70]"> ♡</span>
+            </h2>
+
+            <p className="mx-auto mt-4 max-w-xs text-sm leading-7 text-[#77796e]">
+              Thank you for shopping with MODEZA. Your order has been placed
+              successfully. We're excited to deliver your favourite pieces!
+            </p>
+
+            {/* Payment Information */}
+            <div className="mt-6 rounded-2xl border border-[#e8dfd2] bg-[#faf7f0] p-4 text-left">
+              <p className="text-xs font-bold uppercase tracking-wider text-[#a08e70]">
+                Payment method
+              </p>
+
+              <p className="mt-2 text-sm font-semibold text-[#164d3d]">
+                {paymentMethod === "COD"
+                  ? "Cash on Delivery"
+                  : "Online Payment"}
+              </p>
+
+              {paymentMethod === "COD" && (
+                <p className="mt-1 text-xs leading-5 text-[#858477]">
+                  Pay when your order arrives.
+                </p>
+              )}
+            </div>
+
+            {/* View Orders */}
+            <button
+              type="button"
+              onClick={() => navigate("/orders")}
+              className="mt-7 flex min-h-12 w-full items-center justify-center rounded-xl bg-[#164d3d] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#10392d]"
+            >
+              View My Orders →
+            </button>
+
+            {/* Continue Shopping */}
+            <button
+              type="button"
+              onClick={() => navigate("/")}
+              className="mt-3 min-h-11 w-full rounded-xl border border-[#ddd5c8] px-6 py-3 text-sm font-semibold text-[#365445] transition hover:bg-[#f7f5ee]"
+            >
+              Continue Shopping
+            </button>
+
+            <p className="mt-5 text-[10px] font-medium uppercase tracking-[0.2em] text-[#a39a89]">
+              MODEZA · Everyday elegance
+            </p>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

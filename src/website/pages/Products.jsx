@@ -1,5 +1,4 @@
 
-
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import api from "../../services/api";
@@ -77,10 +76,16 @@ function Products() {
         }
       } catch (err) {
         if (isMounted) {
-          setError(
-            err.response?.data?.message ||
-              "Products load cheyyan kazhinjilla. Please try again."
-          );
+          if (err.response?.status === 401) {
+            setError(
+              "Please log in to your account to continue shopping."
+            );
+          } else {
+            setError(
+              err.response?.data?.message ||
+                "Unable to load products. Please try again."
+            );
+          }
         }
       } finally {
         if (isMounted) {
@@ -290,13 +295,22 @@ function Products() {
           <div className="rounded-xl border border-red-200 bg-white p-8 text-center">
             <p className="text-sm text-red-700">{error}</p>
 
-            <button
-              type="button"
-              onClick={() => window.location.reload()}
-              className="mt-4 rounded-lg bg-[#123F32] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#245B46]"
-            >
-              Try Again
-            </button>
+            {error.startsWith("Please log in") ? (
+              <Link
+                to="/login"
+                className="mt-4 inline-flex rounded-lg bg-[#123F32] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#245B46]"
+              >
+                Log In
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="mt-4 rounded-lg bg-[#123F32] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#245B46]"
+              >
+                Try Again
+              </button>
+            )}
           </div>
         )}
 
@@ -342,10 +356,6 @@ function Products() {
                         {discount}% OFF
                       </span>
                     )}
-
-                    <span className="absolute bottom-3 left-3 right-3 translate-y-3 rounded-lg bg-[#FFFDF9]/95 py-3 text-center text-xs font-semibold tracking-wide text-[#123F32] opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
-                      VIEW PRODUCT
-                    </span>
                   </Link>
 
                   <div className="p-4 sm:p-5">
@@ -427,4 +437,4 @@ function Products() {
   );
 }
 
-export default Products
+export default Products;

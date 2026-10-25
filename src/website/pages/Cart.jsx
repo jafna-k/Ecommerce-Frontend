@@ -18,12 +18,16 @@ function Cart() {
       setError("");
       const response = await api.get("/cart");
       setCart(response.data);
-    } catch (err) {
-      setError(
-        err.response?.data?.message ||
-          "Unable to load cart. Please login and try again."
-      );
-    } finally {
+      } catch (err) {
+     if (err.response?.status === 401) {
+     setError("Please login to your account to view your cart.");
+     } else {
+    setError(
+      err.response?.data?.message ||
+        "Unable to load your cart. Please try again."
+    );
+  }
+  }  finally {
       setLoading(false);
     }
   }, []);
@@ -203,7 +207,7 @@ function Cart() {
               </h1>
 
               <p className="mt-3 text-sm text-[#6b7169]">
-                {itemCount} {itemCount === 1 ? "item" : "items"} in your bag
+                {itemCount} {itemCount === 1 ? "item" : "items"} in your Cart
               </p>
             </div>
 
@@ -265,7 +269,7 @@ function Cart() {
                 <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#e8dfd2] px-5 py-5 sm:px-7">
                   <div>
                     <h2 className="font-serif text-2xl font-bold text-[#123f32]">
-                      Shopping Bag
+                      Shopping Cart
                     </h2>
                     <p className="mt-1 text-xs text-[#81796d]">
                       Review your selected pieces
@@ -609,3 +613,5 @@ function Cart() {
 }
 
 export default Cart;
+
+
