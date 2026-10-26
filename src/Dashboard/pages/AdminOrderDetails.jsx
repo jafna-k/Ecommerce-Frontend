@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import api from "../../services/api";
@@ -10,7 +9,6 @@ function AdminOrderDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [updating, setUpdating] = useState(false);
-  const [status, setStatus] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [updateError, setUpdateError] = useState("");
 
@@ -24,10 +22,8 @@ function AdminOrderDetails() {
       const orderData = result.data ?? result.order ?? result;
 
       setOrder(orderData);
-      setStatus(orderData.status || "Pending");
     } catch (err) {
       console.error("ORDER DETAILS ERROR:", err);
-
       setError(
         err.response?.data?.message ||
           "Unable to load order details. Please try again."
@@ -39,41 +35,8 @@ function AdminOrderDetails() {
 
   useEffect(() => {
     fetchOrder();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
-
-  const updateStatus = async () => {
-    if (!status || status === order?.status || updating) return;
-
-    try {
-      setUpdating(true);
-      setSuccessMessage("");
-      setUpdateError("");
-
-      const response = await api.put(
-        `/admin/orders/${id}/status`,
-        { status }
-      );
-
-      if (response.data?.success === false) {
-        throw new Error(
-          response.data.message || "Unable to update order status."
-        );
-      }
-
-      setOrder((prev) => ({ ...prev, status }));
-      setSuccessMessage("Order status updated successfully.");
-    } catch (err) {
-      console.error("UPDATE STATUS ERROR:", err);
-
-      setUpdateError(
-        err.response?.data?.message ||
-          err.message ||
-          "Unable to update order status."
-      );
-    } finally {
-      setUpdating(false);
-    }
-  };
 
   const money = (value) =>
     Number(value || 0).toLocaleString("en-IN", {
@@ -92,6 +55,9 @@ function AdminOrderDetails() {
       year: "numeric",
     });
   };
+
+  const formatOrderId = (value, length = 6) =>
+    String(value || "").slice(-length).toUpperCase();
 
   const statusStyle = (value) => {
     const current = (value || "Pending").toLowerCase();
@@ -115,8 +81,117 @@ function AdminOrderDetails() {
     return "bg-[#f0e8d8] text-[#725d36]";
   };
 
-  const formatOrderId = (value, length = 6) =>
-    String(value || "").slice(-length).toUpperCase();
+  const getAvailableActions = (currentStatus) => {
+    switch (currentStatus) {
+      case "Pending":
+        return [
+          {
+            status: "Confirmed",
+            label: "Confirm Order",
+            style: "bg-[#124536] text-white hover:bg-[#0b3428]",
+          },
+          {
+            status: "Cancelled",
+            label: "Cancel Order",
+            style:
+              "border border-red-200 bg-red-50 text-red-700 hover:bg-red-100",
+          },
+        ];
+
+      case "Confirmed":
+        return [
+          {
+            status: "Packed",
+            label: "Pack Order",
+            style: "bg-[#124536] text-white hover:bg-[#0b3428]",
+          },
+          {
+            status: "Cancelled",
+            label: "Cancel Order",
+            style:
+              "border border-red-200 bg-red-50 text-red-700 hover:bg-red-100",
+          },
+        ];
+
+      case "Packed":
+        return [
+          {
+            status: "Shipped",
+            label: "Ship Order",
+            style: "bg-[#124536] text-white hover:bg-[#0b3428]",
+          },
+        ];
+
+      case "Shipped":
+        return [
+          {
+            status: "Delivered",
+            label: "Mark as Delivered",
+            style: "bg-[#124536] text-white hover:bg-[#0b3428]",
+          },
+        ];
+
+      default:
+        return [];
+    }
+  };
+
+  const updateStatus = async (newStatus) => {
+    if (!order || updating || newStatus === order.status) {
+      return;
+    }
+
+    const allowedActions = getAvailableActions(order.status);
+
+    if (!allowedActions.some((action) => action.status === newStatus)) {
+      setUpdateError("This status change is not allowed.");
+      return;
+    }
+
+    if (
+      newStatus === "Cancelled" &&
+      !window.confirm("Are you sure you want to cancel this order?")
+    ) {
+      return;
+    }
+
+    try {
+      setUpdating(true);
+      setSuccessMessage("");
+      setUpdateError("");
+
+      const response = await api.put(
+        `/admin/orders/${id}/status`,
+        { status: newStatus }
+      );
+
+      if (response.data?.success === false) {
+        throw new Error(
+          response.data.message || "Unable to update order status."
+        );
+      }
+
+      setOrder((previousOrder) => ({
+        ...previousOrder,
+        status: newStatus,
+      }));
+
+      setSuccessMessage(
+        newStatus === "Cancelled"
+          ? "Order cancelled successfully."
+          : `Order status updated to ${newStatus} successfully.`
+      );
+    } catch (err) {
+      console.error("UPDATE STATUS ERROR:", err);
+      setUpdateError(
+        err.response?.data?.message ||
+          err.message ||
+          "Unable to update order status."
+      );
+    } finally {
+      setUpdating(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -132,20 +207,16 @@ function AdminOrderDetails() {
   if (error) {
     return (
       <div className="rounded-2xl border border-[#e8dfd2] bg-[#fffdf9] p-8 text-center shadow-sm">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-50 text-2xl text-red-600">
-          !
-        </div>
-
-        <h2 className="mt-4 font-serif text-2xl font-bold text-[#123f32]">
+        <h2 className="font-serif text-2xl font-bold text-[#123f32]">
           Order Details
         </h2>
 
-        <p className="mt-2 text-sm text-red-700">{error}</p>
+        <p className="mt-3 text-sm text-red-700">{error}</p>
 
         <button
           type="button"
           onClick={fetchOrder}
-          className="mt-5 rounded-xl bg-[#124536] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0b3428]"
+          className="mt-5 rounded-xl bg-[#124536] px-5 py-3 text-sm font-semibold text-white hover:bg-[#0b3428]"
         >
           Try Again
         </button>
@@ -168,6 +239,7 @@ function AdminOrderDetails() {
         <h2 className="font-serif text-2xl font-bold text-[#123f32]">
           Order not found
         </h2>
+
         <Link
           to="/admin/orders"
           className="mt-4 inline-block text-sm font-semibold text-[#124536] hover:underline"
@@ -185,12 +257,15 @@ function AdminOrderDetails() {
     order.user?.name ||
     order.customer?.name ||
     address.name ||
+    address.fullName ||
     "—";
 
   const customerEmail =
     order.user?.email ||
     order.customer?.email ||
     "—";
+
+  const availableActions = getAvailableActions(order.status);
 
   const informationCards = [
     {
@@ -218,7 +293,6 @@ function AdminOrderDetails() {
 
   return (
     <main className="min-w-0 space-y-7">
-
       {/* Back Navigation */}
       <Link
         to="/admin/orders"
@@ -228,37 +302,71 @@ function AdminOrderDetails() {
         Back to Orders
       </Link>
 
-      {/* Page Heading */}
-      <header className="flex flex-col justify-between gap-4 rounded-2xl border border-[#e8dfd2] bg-[#fffdf9] p-5 shadow-sm sm:flex-row sm:items-center sm:p-7">
-        <div>
-          <p className="text-[10px] font-bold tracking-[0.2em] text-[#81796d]">
-            SALES MANAGEMENT
-          </p>
+      {/* Order Details, Current Status and Actions in One Row */}
+      <header className="rounded-2xl border border-[#e8dfd2] bg-[#fffdf9] p-5 shadow-sm sm:p-7">
+        <div className="flex flex-wrap items-center justify-between gap-5">
+          <div>
+            <p className="text-[10px] font-bold tracking-[0.2em] text-[#81796d]">
+              SALES MANAGEMENT
+            </p>
 
-          <h1 className="mt-2 font-serif text-3xl font-bold text-[#123f32]">
-            Order Details
-          </h1>
+            <h1 className="mt-2 font-serif text-3xl font-bold text-[#123f32]">
+              Order Details
+            </h1>
 
-          <p className="mt-2 text-sm text-[#6b7169]">
-            Order #{formatOrderId(order._id)}
-          </p>
+            <p className="mt-2 text-sm text-[#6b7169]">
+              Order #{formatOrderId(order._id)}
+            </p>
 
-          <p className="mt-1 text-xs text-[#81796d]">
-            Placed on {formatDate(order.createdAt)}
-          </p>
+            <p className="mt-1 text-xs text-[#81796d]">
+              Placed on {formatDate(order.createdAt)}
+            </p>
+          </div>
+
+          {/* Status and buttons */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={`inline-flex items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold ${statusStyle(order.status)}`}
+            >
+              <span className="h-2 w-2 rounded-full bg-current" />
+              {order.status || "Pending"}
+            </span>
+
+            {availableActions.map((action) => (
+              <button
+                key={action.status}
+                type="button"
+                onClick={() => updateStatus(action.status)}
+                disabled={updating}
+                className={`inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${action.style}`}
+              >
+                {updating ? "Updating..." : action.label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <span
-          className={`inline-flex items-center gap-2 self-start rounded-full px-4 py-2 text-sm font-bold capitalize sm:self-center ${statusStyle(order.status)}`}
-        >
-          <span className="h-2 w-2 rounded-full bg-current" />
-          {order.status || "Pending"}
-        </span>
+        {successMessage && (
+          <div
+            role="status"
+            className="mt-5 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800"
+          >
+            ✓ {successMessage}
+          </div>
+        )}
+
+        {updateError && (
+          <div
+            role="alert"
+            className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+          >
+            ✕ {updateError}
+          </div>
+        )}
       </header>
 
-      {/* Information Cards */}
+      {/* Customer and Order Information */}
       <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-
         {informationCards.map((card) => (
           <article
             key={card.title}
@@ -296,7 +404,7 @@ function AdminOrderDetails() {
         ))}
 
         {/* Shipping Address */}
-        <article className="rounded-2xl border border-[#e8dfd2] bg-[#fffdf9] p-5 shadow-sm sm:p-6 xl:col-span-2">
+        <article className="rounded-2xl border border-[#e8dfd2] bg-[#fffdf9] p-5 shadow-sm sm:col-span-2 sm:p-6">
           <div className="mb-5 flex items-center gap-3">
             <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#e8e6f1] text-xl text-[#51477d]">
               ⌖
@@ -306,6 +414,7 @@ function AdminOrderDetails() {
               <h2 className="font-serif text-lg font-bold text-[#123f32]">
                 Shipping Address
               </h2>
+
               <p className="mt-1 text-xs text-[#81796d]">
                 Customer delivery details
               </p>
@@ -326,11 +435,7 @@ function AdminOrderDetails() {
             </p>
 
             <p className="text-sm leading-6 text-[#24352e]">
-              {[
-                address.city,
-                address.state,
-                address.pincode,
-              ]
+              {[address.city, address.state, address.pincode]
                 .filter(Boolean)
                 .join(", ")}
             </p>
@@ -344,6 +449,7 @@ function AdminOrderDetails() {
           <h2 className="font-serif text-xl font-bold text-[#123f32]">
             Ordered Products
           </h2>
+
           <p className="mt-1 text-sm text-[#81796d]">
             Items included in this order.
           </p>
@@ -434,13 +540,17 @@ function AdminOrderDetails() {
           <div className="ml-auto max-w-sm space-y-4">
             <div className="flex items-center justify-between gap-4 text-sm">
               <span className="text-[#6b7169]">Subtotal</span>
+
               <span className="font-semibold text-[#24352e]">
                 ₹{money(order.subtotal)}
               </span>
             </div>
 
             <div className="flex items-center justify-between gap-4 text-sm">
-              <span className="text-[#6b7169]">Shipping Charge</span>
+              <span className="text-[#6b7169]">
+                Shipping Charge
+              </span>
+
               <span className="font-semibold text-[#24352e]">
                 ₹{money(order.shippingCharge)}
               </span>
@@ -460,90 +570,9 @@ function AdminOrderDetails() {
           </div>
         </div>
       </section>
-
-      {/* Update Order Status */}
-      <section className="rounded-2xl border border-[#e8dfd2] bg-[#fffdf9] p-5 shadow-sm sm:p-6">
-        <div className="flex items-start gap-3">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#e5ece3] text-xl text-[#124536]">
-            ↻
-          </span>
-
-          <div>
-            <h2 className="font-serif text-xl font-bold text-[#123f32]">
-              Update Order Status
-            </h2>
-            <p className="mt-1 text-sm text-[#81796d]">
-              Change the order status as it progresses.
-            </p>
-          </div>
-        </div>
-
-        {successMessage && (
-          <div
-            role="status"
-            className="mt-5 flex items-start gap-3 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800"
-          >
-            <span className="font-bold">✓</span>
-            <span>{successMessage}</span>
-          </div>
-        )}
-
-        {updateError && (
-          <div
-            role="alert"
-            className="mt-5 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
-          >
-            <span className="font-bold">✕</span>
-            <span>{updateError}</span>
-          </div>
-        )}
-
-        {order.status === "Cancelled" ? (
-          <div className="mt-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">
-            This order has been cancelled and cannot be updated.
-          </div>
-        ) : (
-          <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-end">
-            <label className="block w-full sm:max-w-sm">
-              <span className="text-sm font-semibold text-[#24352e]">
-                New Order Status
-              </span>
-
-              <select
-                value={status}
-                onChange={(e) => {
-                  setStatus(e.target.value);
-                  setSuccessMessage("");
-                  setUpdateError("");
-                }}
-                disabled={updating}
-                className="mt-2 w-full rounded-xl border border-[#ded6ca] bg-white px-4 py-3 text-sm text-[#24352e] outline-none focus:border-[#164d3d] focus:ring-2 focus:ring-[#164d3d]/10 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <option value="Pending">Pending</option>
-                <option value="Confirmed">Confirmed</option>
-                <option value="Packed">Packed</option>
-                <option value="Shipped">Shipped</option>
-                <option value="Delivered">Delivered</option>
-                <option value="Cancelled">Cancelled</option>
-              </select>
-            </label>
-
-            <button
-              type="button"
-              onClick={updateStatus}
-              disabled={updating || status === order.status}
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#124536] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#0b3428] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {updating && (
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-              )}
-              {updating ? "Updating..." : "Update Status"}
-            </button>
-          </div>
-        )}
-      </section>
     </main>
   );
 }
 
 export default AdminOrderDetails;
+

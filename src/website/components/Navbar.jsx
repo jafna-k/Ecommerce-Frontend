@@ -12,12 +12,19 @@ function Navbar() {
   );
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchText, setSearchText] = useState("");
   const [wishlistCount, setWishlistCount] = useState(0);
   const [cartCount, setCartCount] = useState(0);
 
-  // Update login status when route changes
+  // Update login status
   useEffect(() => {
     setToken(localStorage.getItem("token"));
+  }, [location.pathname, location.search]);
+
+  // Close search when route changes
+  useEffect(() => {
+    setShowSearch(false);
   }, [location.pathname, location.search]);
 
   // Fetch wishlist count
@@ -47,9 +54,7 @@ function Navbar() {
 
         setWishlistCount(products.length);
       } catch {
-        if (!cancelled) {
-          setWishlistCount(0);
-        }
+        if (!cancelled) setWishlistCount(0);
       }
     };
 
@@ -102,9 +107,7 @@ function Navbar() {
 
         setCartCount(totalQuantity);
       } catch {
-        if (!cancelled) {
-          setCartCount(0);
-        }
+        if (!cancelled) setCartCount(0);
       }
     };
 
@@ -115,16 +118,20 @@ function Navbar() {
     };
   }, [token, location.pathname, location.search]);
 
-  const section = new URLSearchParams(location.search).get("section");
+  const searchParams = new URLSearchParams(location.search);
+  const section = searchParams.get("section");
+  const currentSearch = searchParams.get("search");
 
-  // Check active navigation item
+  // Active navigation
   const isActive = (name) => {
     if (name === "home") {
       return location.pathname === "/";
     }
 
     if (name === "shop") {
-      return location.pathname === "/products" && !section;
+      return location.pathname === "/products" &&
+        !section &&
+        !currentSearch;
     }
 
     if (name === "collections") {
@@ -139,6 +146,27 @@ function Navbar() {
       location.pathname === "/products" &&
       section === name
     );
+  };
+
+  // Submit search
+  const handleSearch = (event) => {
+    event.preventDefault();
+
+    const query = searchText.trim();
+
+    if (!query) return;
+
+    setShowSearch(false);
+
+    navigate(`/products?search=${encodeURIComponent(query)}`);
+  };
+
+  // Popular search selection
+  const handlePopularSearch = (item) => {
+    setSearchText(item);
+    setShowSearch(false);
+
+    navigate(`/products?search=${encodeURIComponent(item)}`);
   };
 
   // Logout
@@ -173,23 +201,11 @@ function Navbar() {
   const badgeClass =
     "absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border border-[#D8C49A] bg-[#123F32] px-1 text-[10px] font-bold text-[#FFFDF9] ring-2 ring-[#FFFDF9]";
 
-  // Main navigation links
+  // Main links
   const links = [
-    {
-      label: "Home",
-      to: "/",
-      name: "home",
-    },
-    {
-      label: "Shop",
-      to: "/products",
-      name: "shop",
-    },
-    {
-      label: "Collections",
-      to: "/collections",
-      name: "collections",
-    },
+    { label: "Home", to: "/", name: "home" },
+    { label: "Shop", to: "/products", name: "shop" },
+    { label: "Collections", to: "/collections", name: "collections" },
     {
       label: "New Arrivals",
       to: "/products?section=new-arrivals",
@@ -202,9 +218,16 @@ function Navbar() {
     },
   ];
 
+  const popularSearches = [
+    "Dresses",
+    "Tops",
+    "Shirts",
+    "New Arrivals",
+  ];
+
   return (
     <>
-      {/* NAVBAR */}
+      {/* MAIN NAVBAR */}
       <nav className="sticky top-0 z-50 border-b border-[#E8DFD2] bg-[#FFFDF9]/95 shadow-[0_4px_20px_rgba(18,63,50,0.05)] backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-10 lg:py-4">
 
@@ -228,7 +251,7 @@ function Navbar() {
             </div>
           </Link>
 
-          {/* DESKTOP NAVIGATION */}
+          {/* DESKTOP LINKS */}
           <div className="hidden items-center gap-5 lg:flex xl:gap-8">
             {links.map((item) => (
               <Link
@@ -244,12 +267,16 @@ function Navbar() {
           {/* RIGHT ACTIONS */}
           <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
 
-            {/* 1. SEARCH */}
-            <Link
-              to="/products"
-              className={iconClass}
-              aria-label="Search products"
-              title="Shop products"
+            {/* SEARCH ICON */}
+            <button
+              type="button"
+              onClick={() => setShowSearch((prev) => !prev)}
+              className={`${iconClass} ${
+                showSearch ? "bg-[#E8EDE5]" : ""
+              }`}
+              aria-label="Open search"
+              aria-expanded={showSearch}
+              title="Search products"
             >
               <svg
                 className="h-5 w-5"
@@ -263,9 +290,9 @@ function Navbar() {
                 <circle cx="10.8" cy="10.8" r="6.8" />
                 <path d="m16 16 5 5" />
               </svg>
-            </Link>
+            </button>
 
-            {/* 2. PROFILE */}
+            {/* PROFILE */}
             <Link
               to={token ? "/profile" : "/login"}
               className={iconClass}
@@ -286,7 +313,7 @@ function Navbar() {
               </svg>
             </Link>
 
-            {/* 3. WISHLIST */}
+            {/* WISHLIST */}
             <Link
               to="/wishlist"
               className={iconClass}
@@ -312,7 +339,7 @@ function Navbar() {
               )}
             </Link>
 
-            {/* 4. CART */}
+            {/* CART */}
             <Link
               to="/cart"
               className={iconClass}
@@ -340,7 +367,7 @@ function Navbar() {
               )}
             </Link>
 
-            {/* 5. LOGIN / LOGOUT */}
+            {/* LOGIN / LOGOUT */}
             {token ? (
               <button
                 type="button"
@@ -385,6 +412,119 @@ function Navbar() {
             )}
           </Link>
         </div>
+
+        {/* PREMIUM SEARCH PANEL */}
+        {showSearch && (
+          <div className="absolute left-0 top-full z-50 w-full border-t border-[#E8DFD2] bg-[#FFFDF9] shadow-[0_18px_40px_rgba(18,63,50,0.12)]">
+            <div className="mx-auto max-w-5xl px-4 py-6 sm:px-8 sm:py-8">
+
+              {/* SEARCH HEADING */}
+              <div className="mb-5 flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[#9A815A]">
+                    MODEZA · FASHION HOUSE
+                  </p>
+
+                  <h2 className="mt-2 font-serif text-2xl font-semibold text-[#123F32] sm:text-3xl">
+                    Find your style
+                  </h2>
+
+                  <p className="mt-1 text-sm text-[#68766C]">
+                    Search your favourite fashion pieces.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowSearch(false)}
+                  aria-label="Close search"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#E8DFD2] text-2xl text-[#123F32] transition hover:border-[#123F32] hover:bg-[#E8EDE5]"
+                >
+                  ×
+                </button>
+              </div>
+
+              {/* SEARCH FORM */}
+              <form
+                onSubmit={handleSearch}
+                className="group flex items-center gap-2 rounded-2xl border border-[#D8CFC0] bg-[#FAF7F0] p-2 transition-all duration-300 focus-within:border-[#123F32] focus-within:bg-white focus-within:shadow-[0_0_0_4px_rgba(18,63,50,0.07)] sm:gap-4 sm:p-3"
+              >
+                <div className="ml-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#E8EDE5] text-[#123F32] transition group-focus-within:bg-[#123F32] group-focus-within:text-white sm:ml-3 sm:h-12 sm:w-12">
+                  <svg
+                    className="h-6 w-6"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.7"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <circle cx="10.8" cy="10.8" r="6.8" />
+                    <path d="m16 16 5 5" />
+                  </svg>
+                </div>
+
+                <input
+                  type="search"
+                  value={searchText}
+                  onChange={(event) => setSearchText(event.target.value)}
+                  placeholder="What are you looking for?"
+                  autoFocus
+                  aria-label="Search products"
+                  className="min-w-0 flex-1 bg-transparent py-3 text-sm font-medium text-[#123F32] outline-none placeholder:font-normal placeholder:text-[#9A9A8B] sm:text-base"
+                />
+
+                {searchText && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchText("")}
+                    aria-label="Clear search"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-lg text-[#68766C] transition hover:bg-[#E8EDE5] hover:text-[#123F32]"
+                  >
+                    ×
+                  </button>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={!searchText.trim()}
+                  className="shrink-0 rounded-xl bg-[#123F32] px-3 py-3 text-xs font-semibold text-white transition-all duration-300 hover:bg-[#245B46] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 sm:px-7 sm:text-sm"
+                >
+                  Search
+                </button>
+              </form>
+
+              {/* POPULAR SEARCHES */}
+              <div className="mt-5 flex flex-wrap items-center gap-2">
+                <span className="mr-1 text-xs font-medium text-[#68766C]">
+                  Popular searches:
+                </span>
+
+                {popularSearches.map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => handlePopularSearch(item)}
+                    className="rounded-full border border-[#E8DFD2] bg-white px-3 py-1.5 text-xs font-medium text-[#456153] transition hover:border-[#123F32] hover:bg-[#E8EDE5] hover:text-[#123F32]"
+                  >
+                    {item}
+                  </button>
+                ))}
+              </div>
+
+              {/* BOTTOM DECORATION */}
+              <div className="mt-6 flex items-center gap-3">
+                <div className="h-px flex-1 bg-[#E8DFD2]" />
+
+                <span className="text-[9px] font-medium tracking-[0.25em] text-[#9A815A]">
+                  DISCOVER YOUR LOOK
+                </span>
+
+                <div className="h-px flex-1 bg-[#E8DFD2]" />
+              </div>
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* LOGOUT CONFIRMATION MODAL */}

@@ -34,26 +34,36 @@ function getDiscount(product) {
   if (percentage > 0) return percentage;
 
   if (originalPrice > price && originalPrice > 0) {
-    return Math.round(
-      ((originalPrice - price) / originalPrice) * 100
-    );
+    return Math.round(((originalPrice - price) / originalPrice) * 100);
   }
 
   return 0;
 }
 
 function Products() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const section = searchParams.get("section") || "shop";
   const categoryId = searchParams.get("category") || "";
+  const urlSearch = searchParams.get("search") || "";
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(urlSearch);
   const [sortBy, setSortBy] = useState("default");
 
+  // Wishlist states
+  const [wishlistIds, setWishlistIds] = useState([]);
+  const [wishlistLoading, setWishlistLoading] = useState({});
+  const [wishlistMessage, setWishlistMessage] = useState("");
+
+  // Keep the search input synchronized with Navbar URL searches
+  useEffect(() => {
+    setSearch(urlSearch);
+  }, [urlSearch]);
+
+  // Fetch products
   useEffect(() => {
     let isMounted = true;
 
@@ -76,16 +86,10 @@ function Products() {
         }
       } catch (err) {
         if (isMounted) {
-          if (err.response?.status === 401) {
-            setError(
-              "Please log in to your account to continue shopping."
-            );
-          } else {
-            setError(
-              err.response?.data?.message ||
-                "Unable to load products. Please try again."
-            );
-          }
+          setError(
+            err.response?.data?.message ||
+              "Unable to load products. Please try again."
+          );
         }
       } finally {
         if (isMounted) {
@@ -100,6 +104,137 @@ function Products() {
       isMounted = false;
     };
   }, []);
+
+  // Fetch logged-in customer's wishlist
+  useEffect(() => {
+    let isMounted = true;
+
+    async function fetchWishlist() {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        setWishlistIds([]);
+        return;
+      }
+
+      try {
+        const response = await api.get("/wishlist");
+        const data = response.data;
+
+        const wishlistProducts = Array.isArray(data)
+          ? data
+          : Array.isArray(data.products)
+            ? data.products
+            : Array.isArray(data.wishlist?.products)
+              ? data.wishlist.products
+              : Array.isArray(data.wishlist)
+                ? data.wishlist
+                : [];
+
+        if (isMounted) {
+          setWishlistIds(
+            wishlistProducts
+              .map((item) => {
+                if (typeof item === "string") return item;
+
+                return (
+                  item?._id ||
+                  item?.product?._id ||
+                  item?.product ||
+                  ""
+                );
+              })
+              .filter(Boolean)
+              .map(String)
+          );
+        }
+      } catch {
+        if (isMounted) {
+          setWishlistIds([]);
+        }
+      }
+    }
+
+    fetchWishlist();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Add or remove product from wishlist
+  const toggleWishlist = async (productId) => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      window.location.href = "/login";
+      return;
+    }
+
+    const id = String(productId);
+    const isWishlisted = wishlistIds.includes(id);
+
+    setWishlistLoading((prev) => ({
+      ...prev,
+      [id]: true,
+    }));
+
+    setWishlistMessage("");
+
+    try {
+      if (isWishlisted) {
+        await api.delete(`/wishlist/${id}`);
+
+        setWishlistIds((prev) =>
+          prev.filter((item) => item !== id)
+        );
+
+        setWishlistMessage("Removed from your wishlist.");
+      } else {
+        await api.post(`/wishlist/${id}`);
+
+        setWishlistIds((prev) =>
+          prev.includes(id) ? prev : [...prev, id]
+        );
+
+        setWishlistMessage("Added to your wishlist.");
+      }
+    } catch (err) {
+      setWishlistMessage(
+        err.response?.data?.message ||
+          "Unable to update wishlist. Please try again."
+      );
+    } finally {
+      setWishlistLoading((prev) => ({
+        ...prev,
+        [id]: false,
+      }));
+    }
+  };
+
+  // Search form submit: update URL and keep existing filters
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+
+    const nextParams = new URLSearchParams(searchParams);
+    const searchText = search.trim();
+
+    if (searchText) {
+      nextParams.set("search", searchText);
+    } else {
+      nextParams.delete("search");
+    }
+
+    setSearchParams(nextParams);
+  };
+
+  const clearSearch = () => {
+    setSearch("");
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete("search");
+    setSearchParams(nextParams);
+  };
 
   const pageInfo = {
     shop: {
@@ -130,6 +265,7 @@ function Products() {
 
   const currentPage = pageInfo[section] || pageInfo.shop;
 
+  // Filter and sort products
   const displayedProducts = useMemo(() => {
     let result = [...products];
 
@@ -137,7 +273,7 @@ function Products() {
     result = result.filter(
       (product) =>
         !product.status ||
-        product.status.toLowerCase() === "active"
+        String(product.status).toLowerCase() === "active"
     );
 
     // Filter by category ID
@@ -152,7 +288,7 @@ function Products() {
       });
     }
 
-    // New arrivals
+    // New arrivals: newest products first
     if (section === "new-arrivals") {
       result.sort((a, b) => {
         const dateA = new Date(
@@ -174,19 +310,25 @@ function Products() {
       );
     }
 
-    // Search
+    // Search from Navbar URL or page search input
     const searchText = search.trim().toLowerCase();
 
     if (searchText) {
       result = result.filter((product) => {
-        const name = (product.name || "").toLowerCase();
-        const description = (
+        const name = String(product.name || "").toLowerCase();
+        const description = String(
           product.description || ""
         ).toLowerCase();
 
+        const categoryName =
+          typeof product.category === "object"
+            ? String(product.category?.name || "").toLowerCase()
+            : "";
+
         return (
           name.includes(searchText) ||
-          description.includes(searchText)
+          description.includes(searchText) ||
+          categoryName.includes(searchText)
         );
       });
     }
@@ -209,7 +351,7 @@ function Products() {
     return result;
   }, [products, section, categoryId, search, sortBy]);
 
-  // Scroll to the product section when opening Collections
+  // Scroll to collection section
   useEffect(() => {
     if (section !== "collections") return;
 
@@ -242,7 +384,7 @@ function Products() {
         <div className="mx-auto mt-6 h-[2px] w-16 bg-[#D8C49A]" />
       </section>
 
-      {/* Product / Collections section */}
+      {/* Products section */}
       <section
         id="collections"
         className="mx-auto max-w-[1440px] scroll-mt-6 px-4 py-10 sm:px-6 sm:py-14 lg:px-10"
@@ -256,14 +398,37 @@ function Products() {
           </p>
 
           <div className="flex flex-col gap-3 sm:flex-row">
-            <input
-              type="search"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search products..."
-              aria-label="Search products"
-              className="w-full rounded-lg border border-[#E0D8CA] bg-[#FFFDF9] px-4 py-3 text-sm text-[#123F32] outline-none transition focus:border-[#123F32] sm:w-64"
-            />
+            <form
+              onSubmit={handleSearchSubmit}
+              className="flex w-full gap-2 sm:w-auto"
+            >
+              <input
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search products..."
+                aria-label="Search products"
+                className="min-w-0 flex-1 rounded-lg border border-[#E0D8CA] bg-[#FFFDF9] px-4 py-3 text-sm text-[#123F32] outline-none transition focus:border-[#123F32] sm:w-64"
+              />
+
+              {search && (
+                <button
+                  type="button"
+                  onClick={clearSearch}
+                  aria-label="Clear search"
+                  className="rounded-lg border border-[#E0D8CA] px-3 text-sm text-[#123F32] hover:bg-[#F1EDE4]"
+                >
+                  Clear
+                </button>
+              )}
+
+              <button
+                type="submit"
+                className="rounded-lg bg-[#123F32] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#245B46]"
+              >
+                Search
+              </button>
+            </form>
 
             <select
               value={sortBy}
@@ -278,6 +443,36 @@ function Products() {
             </select>
           </div>
         </div>
+
+        {/* Active search information */}
+        {urlSearch && (
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#E8DFD2] bg-[#FFFDF9] px-4 py-3">
+            <p className="text-sm text-[#68766C]">
+              Search results for{" "}
+              <span className="font-semibold text-[#123F32]">
+                “{urlSearch}”
+              </span>
+            </p>
+
+            <button
+              type="button"
+              onClick={clearSearch}
+              className="text-sm font-semibold text-[#123F32] underline underline-offset-4 hover:text-[#9A815A]"
+            >
+              Clear search
+            </button>
+          </div>
+        )}
+
+        {/* Wishlist message */}
+        {wishlistMessage && (
+          <div
+            role="status"
+            className="mb-5 rounded-lg border border-[#E0D8CA] bg-[#FFFDF9] px-4 py-3 text-sm text-[#123F32]"
+          >
+            {wishlistMessage}
+          </div>
+        )}
 
         {/* Loading */}
         {loading && (
@@ -295,22 +490,13 @@ function Products() {
           <div className="rounded-xl border border-red-200 bg-white p-8 text-center">
             <p className="text-sm text-red-700">{error}</p>
 
-            {error.startsWith("Please log in") ? (
-              <Link
-                to="/login"
-                className="mt-4 inline-flex rounded-lg bg-[#123F32] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#245B46]"
-              >
-                Log In
-              </Link>
-            ) : (
-              <button
-                type="button"
-                onClick={() => window.location.reload()}
-                className="mt-4 rounded-lg bg-[#123F32] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#245B46]"
-              >
-                Try Again
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="mt-4 rounded-lg bg-[#123F32] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#245B46]"
+            >
+              Try Again
+            </button>
           </div>
         )}
 
@@ -323,41 +509,85 @@ function Products() {
               const originalPrice =
                 Number(product.originalPrice) || 0;
               const imageUrl = getImageUrl(product.image);
+              const isWishlisted = wishlistIds.includes(
+                String(product._id)
+              );
+              const isWishlistLoading = Boolean(
+                wishlistLoading[product._id]
+              );
 
               return (
                 <article
                   key={product._id}
                   className="group overflow-hidden rounded-xl border border-[#E8DFD2] bg-[#FFFDF9] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(18,63,50,0.09)]"
                 >
-                  <Link
-                    to={`/products/${product._id}`}
-                    className="relative block overflow-hidden bg-[#F1EDE4]"
-                  >
-                    <div className="aspect-[3/4] overflow-hidden">
-                      {imageUrl ? (
-                        <img
-                          src={imageUrl}
-                          alt={product.name || "Fashion product"}
-                          loading="lazy"
-                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                          onError={(event) => {
-                            event.currentTarget.style.display = "none";
-                          }}
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-sm text-[#68766C]">
-                          No image available
-                        </div>
-                      )}
-                    </div>
+                  {/* Product image */}
+                  <div className="relative overflow-hidden bg-[#F1EDE4]">
+                    <Link
+                      to={`/products/${product._id}`}
+                      className="block"
+                    >
+                      <div className="aspect-[3/4] overflow-hidden">
+                        {imageUrl ? (
+                          <img
+                            src={imageUrl}
+                            alt={product.name || "Fashion product"}
+                            loading="lazy"
+                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            onError={(event) => {
+                              event.currentTarget.style.display = "none";
+                            }}
+                          />
+                        ) : (
+                          <div className="flex h-full items-center justify-center text-sm text-[#68766C]">
+                            No image available
+                          </div>
+                        )}
+                      </div>
+                    </Link>
 
+                    {/* Wishlist heart */}
+                    <button
+                      type="button"
+                      onClick={() => toggleWishlist(product._id)}
+                      disabled={isWishlistLoading}
+                      aria-label={
+                        isWishlisted
+                          ? "Remove from wishlist"
+                          : "Add to wishlist"
+                      }
+                      aria-pressed={isWishlisted}
+                      title={
+                        isWishlisted
+                          ? "Remove from wishlist"
+                          : "Add to wishlist"
+                      }
+                      className="absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-[#E8DFD2] bg-[#FFFDF9] shadow-sm transition duration-200 hover:scale-110 hover:shadow-md disabled:cursor-wait disabled:opacity-60"
+                    >
+                      <span
+                        className={`text-2xl leading-none ${
+                          isWishlisted
+                            ? "text-red-600"
+                            : "text-[#123F32]"
+                        }`}
+                      >
+                        {isWishlistLoading
+                          ? "…"
+                          : isWishlisted
+                            ? "♥"
+                            : "♡"}
+                      </span>
+                    </button>
+
+                    {/* Discount badge */}
                     {discount > 0 && (
                       <span className="absolute left-3 top-3 rounded-md bg-[#123F32] px-3 py-1.5 text-xs font-semibold text-white">
                         {discount}% OFF
                       </span>
                     )}
-                  </Link>
+                  </div>
 
+                  {/* Product information */}
                   <div className="p-4 sm:p-5">
                     <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#9A815A]">
                       MODEZA COLLECTION
@@ -375,6 +605,7 @@ function Products() {
                         "Discover your new favourite style."}
                     </p>
 
+                    {/* Price */}
                     <div className="mt-4 flex flex-wrap items-center gap-2">
                       <span className="text-lg font-bold text-[#123F32]">
                         ₹
@@ -390,6 +621,7 @@ function Products() {
                       )}
                     </div>
 
+                    {/* View details */}
                     <Link
                       to={`/products/${product._id}`}
                       className="mt-5 flex w-full items-center justify-center rounded-lg border border-[#123F32] px-4 py-3 text-sm font-semibold text-[#123F32] transition duration-300 hover:bg-[#123F32] hover:text-[#FFFDF9]"
@@ -409,27 +641,41 @@ function Products() {
             <div className="text-4xl text-[#D8C49A]">✿</div>
 
             <h2 className="mt-4 font-serif text-2xl font-semibold text-[#123F32]">
-              {section === "deals"
-                ? "No Deals Available"
-                : section === "new-arrivals"
-                  ? "No New Arrivals Yet"
-                  : "No Products Found"}
+              {urlSearch
+                ? "No Matching Products"
+                : section === "deals"
+                  ? "No Deals Available"
+                  : section === "new-arrivals"
+                    ? "No New Arrivals Yet"
+                    : "No Products Found"}
             </h2>
 
             <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-[#68766C]">
-              {section === "deals"
-                ? "There are no discounted products available right now. Please check back later."
-                : section === "new-arrivals"
-                  ? "New styles will appear here when products are added to the store."
-                  : "Try another search or explore our full collection."}
+              {urlSearch
+                ? `We couldn't find products matching "${urlSearch}". Try a different product name or keyword.`
+                : section === "deals"
+                  ? "There are no discounted products available right now. Please check back later."
+                  : section === "new-arrivals"
+                    ? "New styles will appear here when products are added to the store."
+                    : "Try another search or explore our full collection."}
             </p>
 
-            <Link
-              to="/products"
-              className="mt-6 inline-flex rounded-lg bg-[#123F32] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#245B46]"
-            >
-              Explore All Products
-            </Link>
+            {urlSearch ? (
+              <button
+                type="button"
+                onClick={clearSearch}
+                className="mt-6 rounded-lg bg-[#123F32] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#245B46]"
+              >
+                Clear Search
+              </button>
+            ) : (
+              <Link
+                to="/products"
+                className="mt-6 inline-flex rounded-lg bg-[#123F32] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#245B46]"
+              >
+                Explore All Products
+              </Link>
+            )}
           </div>
         )}
       </section>
